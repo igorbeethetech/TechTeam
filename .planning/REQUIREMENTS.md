@@ -181,62 +181,62 @@
 | PROJ-03 | Phase 1 | Pending |
 | PROJ-04 | Phase 1 | Pending |
 | PROJ-05 | Phase 1 | Pending |
-| BOARD-01 | Phase 1 | Pending |
-| BOARD-02 | Phase 1 | Pending |
-| BOARD-03 | Phase 1 | Pending |
-| BOARD-04 | Phase 1 | Pending |
+| BOARD-01 | Phase 2 | Pending |
+| BOARD-02 | Phase 2 | Pending |
+| BOARD-03 | Phase 2 | Pending |
+| BOARD-04 | Phase 2 | Pending |
 | BOARD-05 | Phase 2 | Pending |
-| DEM-01 | Phase 1 | Pending |
-| DEM-02 | Phase 1 | Pending |
-| DEM-03 | Phase 1 | Pending |
-| DEM-04 | Phase 2 | Pending |
-| DEM-05 | Phase 2 | Pending |
-| DEM-06 | Phase 2 | Pending |
-| AGENT-01 | Phase 2 | Pending |
-| AGENT-02 | Phase 2 | Pending |
-| AGENT-03 | Phase 2 | Pending |
-| AGENT-04 | Phase 2 | Pending |
-| AGENT-05 | Phase 2 | Pending |
-| AGENT-06 | Phase 2 | Pending |
-| AGENT-07 | Phase 2 | Pending |
-| DISC-01 | Phase 2 | Pending |
-| DISC-02 | Phase 2 | Pending |
-| DISC-03 | Phase 2 | Pending |
-| DISC-04 | Phase 2 | Pending |
-| PLAN-01 | Phase 2 | Pending |
-| PLAN-02 | Phase 2 | Pending |
-| PLAN-03 | Phase 2 | Pending |
-| DEV-01 | Phase 3 | Pending |
-| DEV-02 | Phase 3 | Pending |
-| DEV-03 | Phase 3 | Pending |
-| DEV-04 | Phase 3 | Pending |
-| TEST-01 | Phase 3 | Pending |
-| TEST-02 | Phase 3 | Pending |
-| TEST-03 | Phase 3 | Pending |
-| TEST-04 | Phase 3 | Pending |
-| TEST-05 | Phase 3 | Pending |
-| MERGE-01 | Phase 4 | Pending |
-| MERGE-02 | Phase 4 | Pending |
-| MERGE-03 | Phase 4 | Pending |
-| MERGE-04 | Phase 4 | Pending |
-| MERGE-05 | Phase 4 | Pending |
-| CONC-01 | Phase 4 | Pending |
-| CONC-02 | Phase 4 | Pending |
-| CONC-03 | Phase 4 | Pending |
-| CONC-04 | Phase 3 | Pending |
-| METR-01 | Phase 4 | Pending |
-| METR-02 | Phase 4 | Pending |
-| METR-03 | Phase 4 | Pending |
-| METR-04 | Phase 4 | Pending |
-| NOTIF-01 | Phase 4 | Pending |
-| NOTIF-02 | Phase 4 | Pending |
-| NOTIF-03 | Phase 4 | Pending |
+| DEM-01 | Phase 2 | Pending |
+| DEM-02 | Phase 2 | Pending |
+| DEM-03 | Phase 2 | Pending |
+| DEM-04 | Phase 3 | Pending |
+| DEM-05 | Phase 3 | Pending |
+| DEM-06 | Phase 3 | Pending |
+| AGENT-01 | Phase 3 | Pending |
+| AGENT-02 | Phase 3 | Pending |
+| AGENT-03 | Phase 3 | Pending |
+| AGENT-04 | Phase 3 | Pending |
+| AGENT-05 | Phase 3 | Pending |
+| AGENT-06 | Phase 3 | Pending |
+| AGENT-07 | Phase 3 | Pending |
+| DISC-01 | Phase 3 | Pending |
+| DISC-02 | Phase 3 | Pending |
+| DISC-03 | Phase 3 | Pending |
+| DISC-04 | Phase 3 | Pending |
+| PLAN-01 | Phase 3 | Pending |
+| PLAN-02 | Phase 3 | Pending |
+| PLAN-03 | Phase 3 | Pending |
+| DEV-01 | Phase 4 | Pending |
+| DEV-02 | Phase 4 | Pending |
+| DEV-03 | Phase 4 | Pending |
+| DEV-04 | Phase 4 | Pending |
+| TEST-01 | Phase 4 | Pending |
+| TEST-02 | Phase 4 | Pending |
+| TEST-03 | Phase 4 | Pending |
+| TEST-04 | Phase 4 | Pending |
+| TEST-05 | Phase 4 | Pending |
+| CONC-04 | Phase 4 | Pending |
+| MERGE-01 | Phase 5 | Pending |
+| MERGE-02 | Phase 5 | Pending |
+| MERGE-03 | Phase 5 | Pending |
+| MERGE-04 | Phase 5 | Pending |
+| MERGE-05 | Phase 5 | Pending |
+| CONC-01 | Phase 5 | Pending |
+| CONC-02 | Phase 5 | Pending |
+| CONC-03 | Phase 5 | Pending |
+| METR-01 | Phase 6 | Pending |
+| METR-02 | Phase 6 | Pending |
+| METR-03 | Phase 6 | Pending |
+| METR-04 | Phase 6 | Pending |
+| NOTIF-01 | Phase 6 | Pending |
+| NOTIF-02 | Phase 6 | Pending |
+| NOTIF-03 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 63 total
-- Mapped to phases: 63
-- Unmapped: 0 ✓
+- v1 requirements: 68 total
+- Mapped to phases: 68
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after initial definition*
+*Last updated: 2026-02-11 after roadmap creation*
