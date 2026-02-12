@@ -1,14 +1,21 @@
 "use client"
 
-import { use } from "react"
+import { use, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/lib/api"
 import { BoardHeader } from "@/components/board/board-header"
 import { KanbanBoardView } from "@/components/board/kanban-board"
+import { DemandForm } from "@/components/demands/demand-form"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 import type { Project, Demand } from "@techteam/shared"
 
 interface ProjectResponse {
@@ -25,7 +32,7 @@ export default function BoardPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = use(params)
-  const router = useRouter()
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const {
     data: projectData,
@@ -82,8 +89,26 @@ export default function BoardPage({
         projectName={project.name}
         projectId={projectId}
         demandCount={demandCount}
+        onNewDemand={() => setSheetOpen(true)}
       />
       <KanbanBoardView projectId={projectId} />
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>New Demand</SheetTitle>
+            <SheetDescription>
+              Create a new demand for {project.name}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 pb-4">
+            <DemandForm
+              projectId={projectId}
+              onSuccess={() => setSheetOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
