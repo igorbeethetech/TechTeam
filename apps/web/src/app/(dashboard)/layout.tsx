@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useSession, signOut, organization } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 export default function DashboardLayout({
   children,
@@ -86,6 +87,7 @@ export default function DashboardLayout({
             </nav>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <span className="text-sm text-muted-foreground">
               {session.user.email}
             </span>
