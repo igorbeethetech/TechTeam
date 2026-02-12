@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 2 - Kanban and Demands
+**Current focus:** Phase 2 Complete - Ready for Phase 3
 
 ## Current Position
 
-Phase: 2 of 6 (Kanban and Demands)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-12 -- Completed 02-01-PLAN.md (demand model, API, and Kanban board)
+Phase: 2 of 6 (Kanban and Demands) -- COMPLETE
+Plan: 2 of 2 in current phase (all done)
+Status: Phase Complete
+Last activity: 2026-02-12 -- Completed 02-02-PLAN.md (demand creation form and detail page)
 
-Progress: [█████░░░░░░░░░░░░░░░] 24%
+Progress: [██████░░░░░░░░░░░░░░] 29%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 20min
-- Total execution time: 1.33 hours
+- Total plans completed: 5
+- Average duration: 18min
+- Total execution time: 1.42 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 70min | 23min |
-| 02-kanban-demands | 1/2 | 10min | 10min |
+| 02-kanban-demands | 2/2 | 15min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (14min), 01-02 (9min), 01-03 (47min), 02-01 (10min)
+- Last 5 plans: 01-02 (9min), 01-03 (47min), 02-01 (10min), 02-02 (5min)
 - Trend: improving
 
 *Updated after each plan completion*
@@ -61,6 +61,10 @@ Recent decisions affecting current work:
 - [02-01]: Built Kanban UI primitives manually with @dnd-kit/core + @dnd-kit/sortable because Dice UI registry URL was unavailable -- same API pattern maintained
 - [02-01]: Demand stage update uses dual callback pattern -- onMove fires PATCH API, handleValueChange manages local cache for optimistic UI
 - [02-01]: TENANT_MODELS now includes "Demand" alongside "Project" -- critical for tenant isolation of demand data
+- [02-02]: Sheet side panel for demand creation keeps board visible -- better UX than full-page form
+- [02-02]: ExternalLink icon in demand card instead of wrapping card in Link -- stopPropagation avoids drag-and-drop click conflicts
+- [02-02]: Ternary expressions for unknown-typed fields (requirements, plan) to satisfy ReactNode type constraints
+- [02-02]: Progressive disclosure for future-phase fields -- shown only when populated by agents
 
 ### Pending Todos
 
@@ -75,5 +79,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 02-01-PLAN.md
-Resume file: .planning/phases/02-kanban-and-demands/02-01-SUMMARY.md
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
+Resume file: .planning/phases/02-kanban-and-demands/02-02-SUMMARY.md
