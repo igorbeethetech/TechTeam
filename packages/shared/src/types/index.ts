@@ -17,3 +17,30 @@ export interface Project {
   createdAt: Date
   updatedAt: Date
 }
+
+export type DemandStage = "inbox" | "discovery" | "planning" | "development" | "testing" | "merge" | "done"
+
+export type DemandPriority = "low" | "medium" | "high" | "urgent"
+
+export interface Demand {
+  id: string
+  tenantId: string
+  projectId: string
+  title: string
+  description: string | null
+  stage: DemandStage
+  priority: DemandPriority
+  complexity: string | null
+  requirements: unknown
+  plan: unknown
+  branchName: string | null
+  prUrl: string | null
+  mergeStatus: string | null
+  mergeConflicts: unknown
+  mergeAttempts: number
+  totalTokens: number
+  totalCostUsd: number
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}

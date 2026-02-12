@@ -19,3 +19,17 @@ export const PIPELINE_STAGES = [
 ] as const
 
 export type PipelineStage = (typeof PIPELINE_STAGES)[number]
+
+export const PRIORITY_LEVELS = ["low", "medium", "high", "urgent"] as const
+
+export type PriorityLevel = (typeof PRIORITY_LEVELS)[number]
+
+export const STAGE_LABELS: Record<PipelineStage, string> = {
+  inbox: "Inbox",
+  discovery: "Discovery",
+  planning: "Planning",
+  development: "Development",
+  testing: "Testing",
+  merge: "Merge",
+  done: "Done",
+}

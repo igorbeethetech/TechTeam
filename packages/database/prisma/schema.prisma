@@ -133,6 +133,8 @@ model Project {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
+  demands          Demand[]
+
   @@index([tenantId])
 }
 
@@ -144,4 +146,68 @@ enum ProjectStatus {
 enum MergeStrategy {
   fifo
   priority
+}
+
+// === DEMAND MODEL ===
+
+model Demand {
+  id              String         @id @default(cuid())
+  tenantId        String
+  projectId       String
+  title           String
+  description     String?        @db.Text
+  stage           DemandStage    @default(inbox)
+  priority        DemandPriority @default(medium)
+  complexity      Complexity?
+  requirements    Json?
+  plan            Json?
+  branchName      String?
+  prUrl           String?
+  mergeStatus     MergeStatus?
+  mergeConflicts  Json?
+  mergeAttempts   Int            @default(0)
+  totalTokens     Int            @default(0)
+  totalCostUsd    Float          @default(0)
+  createdBy       String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([stage])
+  @@index([projectId, stage])
+}
+
+enum DemandStage {
+  inbox
+  discovery
+  planning
+  development
+  testing
+  merge
+  done
+}
+
+enum DemandPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum Complexity {
+  S
+  M
+  L
+  XL
+}
+
+enum MergeStatus {
+  pending
+  auto_merged
+  conflict_resolving
+  needs_human
+  merged
 }
