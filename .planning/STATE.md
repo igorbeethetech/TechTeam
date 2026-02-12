@@ -38,6 +38,7 @@ Progress: [█████████████████░░░] 83%
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 05 P02 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Recent decisions affecting current work:
 - [05-01]: Conflicts stub directly to needs_human -- Steps 2/3 deferred to Plan 02
 - [05-03]: Dev slot released after development (before testing) -- maximizes throughput since testing doesn't need repo isolation
 - [05-03]: Worktree only for maxConcurrentDev > 1 -- single-dev projects use standard branch checkout
+- [Phase 05-02]: Merge-resolver uses CLAUDE_DEV_MODEL for code understanding quality
+- [Phase 05-02]: Double verification after AI resolution: git status conflicted check + conflict marker grep before commit
+- [Phase 05-02]: Prisma namespace exported from database package to enable Prisma.DbNull for JSON null clearing
 
 ### Pending Todos
 
