@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 5 In Progress - Merge/Concurrency
+**Current focus:** Phase 5 Complete - Ready for Phase 6
 
 ## Current Position
 
 Phase: 5 of 6 (Merge/Concurrency)
 Plan: 3 of 3 in current phase
-Status: Phase Complete
-Last activity: 2026-02-12 -- Completed 05-03-PLAN.md (dev concurrency gating + merge status dashboard)
+Status: Phase Complete — Verified (14/14 must-haves)
+Last activity: 2026-02-12 -- Phase 5 execution complete, verification passed
 
 Progress: [█████████████████░░░] 83%
 
@@ -38,8 +38,6 @@ Progress: [█████████████████░░░] 83%
 - Trend: stable
 
 *Updated after each plan completion*
-| Phase 05 P02 | 5min | 2 tasks | 7 files |
-
 ## Accumulated Context
 
 ### Decisions
@@ -104,11 +102,11 @@ None yet.
 ### Blockers/Concerns
 
 - [Research]: Claude CLI headless mode (`claude -p`) -- RESOLVED: Using @anthropic-ai/claude-agent-sdk TypeScript SDK instead (typed results, structured output, native cost tracking)
-- [Research]: BullMQ concurrency grouping (`groupKey`) needs verification before Phase 5
+- [Research]: BullMQ concurrency grouping (`groupKey`) -- RESOLVED: Pro-only feature, used app-level Redis semaphore instead (Phase 5)
 - [Research]: All stack version numbers require 2026 verification before Phase 1 -- PARTIALLY RESOLVED: @fastify/cookie v12 doesn't exist (fixed to v11), other versions verified OK
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 05-03-PLAN.md (dev concurrency gating + merge status dashboard) -- Phase 5 complete
-Resume file: .planning/phases/05-merge-concurrency/05-03-SUMMARY.md
+Stopped at: Phase 5 execution complete, verification passed (14/14)
+Resume file: .planning/phases/05-merge-concurrency/05-VERIFICATION.md

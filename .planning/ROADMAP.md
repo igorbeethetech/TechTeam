@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Kanban and Demands** - Interactive board with 7 columns, demand creation, and detail views
 - [x] **Phase 3: Agent Pipeline** - BullMQ job queue, Discovery agent, Planning agent, and agent execution tracking
 - [x] **Phase 4: Development and Testing** - Code generation agent, PR creation, testing agent, and feedback loop
-- [ ] **Phase 5: Merge and Concurrency** - 3-tier merge strategy, merge queue, and concurrent development control
+- [x] **Phase 5: Merge and Concurrency** - 3-tier merge strategy, merge queue, and concurrent development control
 - [ ] **Phase 6: Metrics and Notifications** - Cost/performance dashboards and in-app notification system
 
 ## Phase Details
@@ -99,9 +99,9 @@ Plans:
 **Plans:** 3 plans across 2 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — Merge queue infrastructure, concurrency library, extended git/github utilities, auto-merge (Step 1), agent worker wiring
-- [ ] 05-02-PLAN.md — Merge-resolver AI agent (Step 2), human escalation (Step 3), merge retry/status API routes
-- [ ] 05-03-PLAN.md — Dev slot concurrency gating, worktree support, MergeStatusView dashboard component
+- [x] 05-01-PLAN.md — Merge queue infrastructure, concurrency library, extended git/github utilities, auto-merge (Step 1), agent worker wiring
+- [x] 05-02-PLAN.md — Merge-resolver AI agent (Step 2), human escalation (Step 3), merge retry/status API routes
+- [x] 05-03-PLAN.md — Dev slot concurrency gating, worktree support, MergeStatusView dashboard component
 
 ### Phase 6: Metrics and Notifications
 **Goal**: Users have full visibility into platform costs, agent performance, and receive timely alerts for events requiring attention
@@ -128,5 +128,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Kanban and Demands | 2/2 | ✓ Complete | 2026-02-12 |
 | 3. Agent Pipeline | 3/3 | ✓ Complete | 2026-02-12 |
 | 4. Development and Testing | 3/3 | ✓ Complete | 2026-02-12 |
-| 5. Merge and Concurrency | 0/3 | Not started | - |
+| 5. Merge and Concurrency | 3/3 | ✓ Complete | 2026-02-12 |
 | 6. Metrics and Notifications | 0/2 | Not started | - |
