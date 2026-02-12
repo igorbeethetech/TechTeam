@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 2 Complete - Ready for Phase 3
+**Current focus:** Phase 3 In Progress - Agent Pipeline Infrastructure
 
 ## Current Position
 
-Phase: 2 of 6 (Kanban and Demands) -- COMPLETE
-Plan: 2 of 2 in current phase (all done)
-Status: Phase Complete
-Last activity: 2026-02-12 -- Completed 02-02-PLAN.md (demand creation form and detail page)
+Phase: 3 of 6 (Agent Pipeline)
+Plan: 1 of 3 in current phase (03-01 complete)
+Status: In Progress
+Last activity: 2026-02-12 -- Completed 03-01-PLAN.md (agent pipeline infrastructure)
 
-Progress: [██████░░░░░░░░░░░░░░] 29%
+Progress: [███████░░░░░░░░░░░░░] 35%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 18min
-- Total execution time: 1.42 hours
+- Total plans completed: 6
+- Average duration: 16min
+- Total execution time: 1.55 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██████░░░░░░░░░░░░░░] 29%
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 70min | 23min |
 | 02-kanban-demands | 2/2 | 15min | 8min |
+| 03-agent-pipeline | 1/3 | 8min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (9min), 01-03 (47min), 02-01 (10min), 02-02 (5min)
-- Trend: improving
+- Last 5 plans: 01-03 (47min), 02-01 (10min), 02-02 (5min), 03-01 (8min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -65,6 +66,10 @@ Recent decisions affecting current work:
 - [02-02]: ExternalLink icon in demand card instead of wrapping card in Link -- stopPropagation avoids drag-and-drop click conflicts
 - [02-02]: Ternary expressions for unknown-typed fields (requirements, plan) to satisfy ReactNode type constraints
 - [02-02]: Progressive disclosure for future-phase fields -- shown only when populated by agents
+- [03-01]: ANTHROPIC_API_KEY as optionalEnv -- API server should not crash when key isn't set, only worker needs it at runtime
+- [03-01]: Stub agent files for discovery/planning -- allows TypeScript compilation while deferring implementation to Plans 02/03
+- [03-01]: Worker concurrency set to 2 -- balances throughput with Claude API rate limits
+- [03-01]: Separate Redis connections for Queue (default) and Worker (maxRetriesPerRequest: null) -- BullMQ requirement for blocking commands
 
 ### Pending Todos
 
@@ -72,12 +77,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Research]: Claude CLI headless mode (`claude -p`) documentation quality is LOW confidence -- validate before Phase 3
+- [Research]: Claude CLI headless mode (`claude -p`) -- RESOLVED: Using @anthropic-ai/claude-agent-sdk TypeScript SDK instead (typed results, structured output, native cost tracking)
 - [Research]: BullMQ concurrency grouping (`groupKey`) needs verification before Phase 5
 - [Research]: All stack version numbers require 2026 verification before Phase 1 -- PARTIALLY RESOLVED: @fastify/cookie v12 doesn't exist (fixed to v11), other versions verified OK
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
-Resume file: .planning/phases/02-kanban-and-demands/02-02-SUMMARY.md
+Stopped at: Completed 03-01-PLAN.md (agent pipeline infrastructure)
+Resume file: .planning/phases/03-agent-pipeline/03-01-SUMMARY.md
