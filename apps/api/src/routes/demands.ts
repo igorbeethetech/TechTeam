@@ -70,7 +70,20 @@ export default async function demandRoutes(fastify: FastifyInstance) {
           projectId: demand.projectId,
           phase: "discovery",
         })
-        // Update demand agentStatus to queued
+        await request.prisma.demand.update({
+          where: { id },
+          data: { agentStatus: "queued" },
+        })
+      }
+
+      // When stage changes to development, enqueue development agent job
+      if (parsed.data.stage === "development") {
+        await agentQueue.add("run-agent", {
+          demandId: id,
+          tenantId: request.session!.session.activeOrganizationId!,
+          projectId: demand.projectId,
+          phase: "development",
+        })
         await request.prisma.demand.update({
           where: { id },
           data: { agentStatus: "queued" },
