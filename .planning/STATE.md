@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 6 Plan 01 Complete - Metrics Dashboard
+**Current focus:** Phase 6 Complete - All v1.0 Phases Delivered
 
 ## Current Position
 
 Phase: 6 of 6 (Metrics/Notifications)
-Plan: 1 of 2 in current phase
-Status: Plan 01 Complete
-Last activity: 2026-02-12 -- Phase 6 Plan 01 (Metrics Dashboard) executed
+Plan: 2 of 2 in current phase
+Status: Phase Complete -- All 6 Phases Delivered
+Last activity: 2026-02-12 -- Phase 6 Plan 02 (In-App Notifications) executed
 
-Progress: [██████████████████░░] 94%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 9min
-- Total execution time: 2.20 hours
+- Total execution time: 2.30 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [██████████████████░░] 94%
 | 03-agent-pipeline | 3/3 | 17min | 6min |
 | 04-dev-testing | 3/3 | 16min | 5min |
 | 05-merge-concurrency | 3/3 | 7min | 2min |
-| 06-metrics-notifications | 1/2 | 5min | 5min |
+| 06-metrics-notifications | 2/2 | 11min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (3min), 05-01 (4min), 05-03 (3min), 05-02 (0min), 06-01 (5min)
+- Last 5 plans: 05-01 (4min), 05-03 (3min), 05-02 (0min), 06-01 (5min), 06-02 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -99,6 +99,9 @@ Recent decisions affecting current work:
 - [06-01]: completedAt DateTime? field on Demand model -- updatedAt unreliable for completion tracking since any later update changes it
 - [06-01]: Raw SQL ($queryRaw) bypasses tenant extension -- always include WHERE tenantId = ${tenantId} manually; COUNT(*)::int to avoid BigInt serialization
 - [06-01]: shadcn ChartContainer requires min-h-[300px] class for charts to render visible height
+- [06-02]: (prisma as any).notification cast needed for tenant extension TypeScript limitation -- $allModels typing strips individual model types
+- [06-02]: Demand update data cast to any for completedAt field -- Prisma extension strips field-level types from schema additions
+- [06-02]: Notification creation always wrapped in try-catch per research pitfall 4 -- never masks worker errors
 
 ### Pending Todos
 
@@ -113,5 +116,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 06-01-PLAN.md (Metrics Dashboard)
-Resume file: .planning/phases/06-metrics-notifications/06-01-SUMMARY.md
+Stopped at: Completed 06-02-PLAN.md (In-App Notifications) -- ALL PHASES COMPLETE
+Resume file: .planning/phases/06-metrics-notifications/06-02-SUMMARY.md
