@@ -121,15 +121,31 @@ async function processMergeJob(
         prNumber: extractPrNumber(prUrl),
       })
 
-      // Update demand: merged, done
+      // Update demand: merged, done, set completedAt for accurate metrics (METR-02)
       await prisma.demand.update({
         where: { id: demandId },
         data: {
           mergeStatus: "merged",
           stage: "done",
           agentStatus: null,
-        },
+          completedAt: new Date(),
+        } as any,
       })
+
+      // NOTIF-03: Notify on demand completion
+      try {
+        await (prisma as any).notification.create({
+          data: {
+            type: "demand_done",
+            title: "Demand completed",
+            message: `"${demand.title}" has been merged and is now done.`,
+            demandId,
+            projectId,
+          },
+        })
+      } catch (notifErr) {
+        console.warn("[merge-worker] Failed to create done notification:", notifErr)
+      }
 
       console.log(
         `[merge-worker] STEP 1 success: demandId=${demandId}, branch=${branchName}`
@@ -245,15 +261,31 @@ async function processMergeJob(
           prNumber: extractPrNumber(prUrl),
         })
 
-        // Update demand: merged, done
+        // Update demand: merged, done, set completedAt for accurate metrics (METR-02)
         await prisma.demand.update({
           where: { id: demandId },
           data: {
             mergeStatus: "merged",
             stage: "done",
             agentStatus: null,
-          },
+            completedAt: new Date(),
+          } as any,
         })
+
+        // NOTIF-03: Notify on demand completion
+        try {
+          await (prisma as any).notification.create({
+            data: {
+              type: "demand_done",
+              title: "Demand completed",
+              message: `"${demand.title}" has been merged and is now done.`,
+              demandId,
+              projectId,
+            },
+          })
+        } catch (notifErr) {
+          console.warn("[merge-worker] Failed to create done notification:", notifErr)
+        }
 
         console.log(
           `[merge-worker] STEP 2 AI resolution succeeded: demandId=${demandId}`
@@ -299,6 +331,21 @@ async function processMergeJob(
       },
     })
 
+    // NOTIF-02: Notify on merge escalation to human
+    try {
+      await (prisma as any).notification.create({
+        data: {
+          type: "merge_needs_human",
+          title: "Merge needs attention",
+          message: `"${demand.title}" has merge conflicts that require manual resolution.`,
+          demandId,
+          projectId,
+        },
+      })
+    } catch (notifErr) {
+      console.warn("[merge-worker] Failed to create merge notification:", notifErr)
+    }
+
     return {
       merged: false,
       mergeStatus: "needs_human",
@@ -320,6 +367,21 @@ async function processMergeJob(
         agentStatus: null,
       },
     })
+
+    // NOTIF-02: Notify on merge failure requiring human intervention
+    try {
+      await (prisma as any).notification.create({
+        data: {
+          type: "merge_needs_human",
+          title: "Merge needs attention",
+          message: `"${demand.title}" merge failed: ${errorMessage.slice(0, 200)}`,
+          demandId,
+          projectId,
+        },
+      })
+    } catch (notifErr) {
+      console.warn("[merge-worker] Failed to create merge notification:", notifErr)
+    }
 
     // Clean up working directory
     try {

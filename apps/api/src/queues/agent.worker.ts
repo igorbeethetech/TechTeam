@@ -257,6 +257,28 @@ export function createAgentWorker() {
           data: { agentStatus: "failed" },
         })
 
+        // NOTIF-01: Notify on agent failure
+        try {
+          const failedDemand = await prisma.demand.findUnique({
+            where: { id: demandId },
+            select: { title: true, projectId: true },
+          })
+          if (failedDemand) {
+            await (prisma as any).notification.create({
+              data: {
+                type: "agent_failed",
+                title: `Agent failed: ${phase}`,
+                message: `Agent failed for "${failedDemand.title}" during ${phase} phase. Error: ${errorMessage.slice(0, 200)}`,
+                demandId,
+                projectId: failedDemand.projectId,
+              },
+            })
+          }
+        } catch (notifErr) {
+          // Never let notification creation mask the original error (research pitfall 4)
+          console.warn("[agent-worker] Failed to create notification:", notifErr)
+        }
+
         console.error(
           `[agent-worker] Job ${job.id} failed: ${errorMessage}`
         )
