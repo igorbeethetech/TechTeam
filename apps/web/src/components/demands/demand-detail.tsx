@@ -5,7 +5,17 @@ import { ArrowLeft, Calendar, User, Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { PipelineProgress } from "./pipeline-progress"
-import { STAGE_LABELS, type Demand, type DemandPriority, type PipelineStage } from "@techteam/shared"
+import { RequirementsView } from "./requirements-view"
+import { PlanView } from "./plan-view"
+import { AgentRunList } from "./agent-run-list"
+import {
+  STAGE_LABELS,
+  type Demand,
+  type DemandPriority,
+  type PipelineStage,
+  type DiscoveryOutput,
+  type PlanningOutput,
+} from "@techteam/shared"
 
 const PRIORITY_COLORS: Record<DemandPriority, string> = {
   low: "bg-slate-100 text-slate-700 hover:bg-slate-100",
@@ -14,11 +24,30 @@ const PRIORITY_COLORS: Record<DemandPriority, string> = {
   urgent: "bg-red-100 text-red-700 hover:bg-red-100",
 }
 
-interface DemandDetailProps {
-  demand: Demand
+const AGENT_STATUS_STYLES: Record<string, string> = {
+  running: "bg-blue-100 text-blue-700 hover:bg-blue-100 animate-pulse",
+  queued: "bg-gray-100 text-gray-700 hover:bg-gray-100",
+  paused: "bg-yellow-100 text-yellow-700 hover:bg-yellow-100",
+  failed: "bg-red-100 text-red-700 hover:bg-red-100",
+  completed: "bg-green-100 text-green-700 hover:bg-green-100",
+  timeout: "bg-orange-100 text-orange-700 hover:bg-orange-100",
 }
 
-export function DemandDetail({ demand }: DemandDetailProps) {
+const AGENT_STATUS_LABELS: Record<string, string> = {
+  running: "Agent Running",
+  queued: "Agent Queued",
+  paused: "Paused - needs human input",
+  failed: "Agent Failed",
+  completed: "Agent Completed",
+  timeout: "Agent Timed Out",
+}
+
+interface DemandDetailProps {
+  demand: Demand
+  isAgentActive?: boolean
+}
+
+export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
   return (
     <div className="space-y-8">
       {/* Back navigation */}
@@ -45,9 +74,21 @@ export function DemandDetail({ demand }: DemandDetailProps) {
       {/* Current stage prominently displayed */}
       <div className="rounded-lg border bg-muted/50 p-4">
         <p className="text-sm text-muted-foreground">Current Stage</p>
-        <p className="text-lg font-semibold">
-          {STAGE_LABELS[demand.stage as PipelineStage] ?? demand.stage}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-lg font-semibold">
+            {STAGE_LABELS[demand.stage as PipelineStage] ?? demand.stage}
+          </p>
+          {demand.agentStatus && (
+            <Badge
+              className={
+                AGENT_STATUS_STYLES[demand.agentStatus] ??
+                "bg-gray-100 text-gray-700"
+              }
+            >
+              {AGENT_STATUS_LABELS[demand.agentStatus] ?? demand.agentStatus}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Metadata */}
@@ -121,9 +162,9 @@ export function DemandDetail({ demand }: DemandDetailProps) {
           <h2 className="text-sm font-medium text-muted-foreground">
             Requirements
           </h2>
-          <pre className="overflow-auto rounded-lg border bg-muted/50 p-4 text-sm">
-            {JSON.stringify(demand.requirements, null, 2)}
-          </pre>
+          <RequirementsView
+            requirements={demand.requirements as DiscoveryOutput}
+          />
         </div>
       ) : null}
 
@@ -132,9 +173,7 @@ export function DemandDetail({ demand }: DemandDetailProps) {
           <h2 className="text-sm font-medium text-muted-foreground">
             Plan
           </h2>
-          <pre className="overflow-auto rounded-lg border bg-muted/50 p-4 text-sm">
-            {JSON.stringify(demand.plan, null, 2)}
-          </pre>
+          <PlanView plan={demand.plan as PlanningOutput} />
         </div>
       ) : null}
 
@@ -175,6 +214,14 @@ export function DemandDetail({ demand }: DemandDetailProps) {
           </Badge>
         </div>
       )}
+
+      {/* Agent Runs */}
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          Agent Runs
+        </h2>
+        <AgentRunList demandId={demand.id} isAgentActive={isAgentActive} />
+      </div>
     </div>
   )
 }
