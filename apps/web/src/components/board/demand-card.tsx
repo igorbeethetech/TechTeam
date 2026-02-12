@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { DemandPriority } from "@techteam/shared"
 
@@ -27,12 +29,21 @@ export function DemandCard({ demand }: DemandCardProps) {
         <Badge className={PRIORITY_COLORS[demand.priority] ?? PRIORITY_COLORS.medium}>
           {demand.priority}
         </Badge>
-        {demand.totalCostUsd > 0 && (
-          <span className="text-xs text-muted-foreground">
-            ${demand.totalCostUsd.toFixed(2)}
-          </span>
-        )}
+        <Link
+          href={`/demands/${demand.id}`}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="size-3.5" />
+          <span className="sr-only">View details</span>
+        </Link>
       </div>
+      {demand.totalCostUsd > 0 && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          ${demand.totalCostUsd.toFixed(2)}
+        </p>
+      )}
     </div>
   )
 }
