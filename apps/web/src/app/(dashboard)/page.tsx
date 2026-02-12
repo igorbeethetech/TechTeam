@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { FolderOpen } from "lucide-react"
+import { FolderOpen, Kanban } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -21,7 +21,8 @@ export default function DashboardPage() {
     queryFn: () => api.get<ProjectsResponse>("/api/projects"),
   })
 
-  const projectCount = projectsData?.projects?.length ?? 0
+  const projects = projectsData?.projects ?? []
+  const projectCount = projects.length
 
   return (
     <div className="space-y-8">
@@ -46,6 +47,32 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {projects.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold">Project Boards</h3>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <Card key={project.id}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{project.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {project.techStack}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/projects/${project.id}/board`}>
+                      <Kanban className="size-4" />
+                      Board
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <Button asChild>
