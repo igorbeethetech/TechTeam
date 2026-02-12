@@ -79,12 +79,12 @@ Plans:
   2. Upon completion, a Pull Request is created automatically with the generated code
   3. Testing agent reviews the PR against the original plan and requirements, runs project tests, and produces an approval or rejection report
   4. If testing rejects the PR, the demand returns to Development with feedback for the agent to address
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 04-01: Development agent (branch creation, code execution in repo, atomic commits, PR creation)
-- [ ] 04-02: Testing agent (PR review, test execution, quality analysis, approval/rejection flow)
-- [ ] 04-03: Rejection feedback loop (Development re-entry with Testing feedback)
+- [ ] 04-01-PLAN.md — Infrastructure: deps (simple-git, @octokit/rest), Prisma schema updates, shared output schemas, git/GitHub utilities, base agent extension, development agent
+- [ ] 04-02-PLAN.md — Testing agent, worker development/testing phase handlers, rejection feedback loop (max 3 cycles), demand stage trigger
+- [ ] 04-03-PLAN.md — Demand detail UI: DevelopmentView (branch, PR link, commit summary) and TestingReportView (verdict, test results, code quality)
 
 ### Phase 5: Merge and Concurrency
 **Goal**: Approved PRs merge automatically through escalating strategies, and multiple demands develop concurrently without conflict
