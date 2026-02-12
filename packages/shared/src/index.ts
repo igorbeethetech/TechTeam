@@ -21,6 +21,7 @@ export {
   type DemandStage,
   type DemandPriority,
   type Demand,
+  type MergeStatus,
   type AgentStatus,
   type AgentRun,
 } from "./types/index"
@@ -30,10 +31,12 @@ export {
   planningOutputSchema,
   developmentOutputSchema,
   testingOutputSchema,
+  mergeResolverOutputSchema,
   type DiscoveryOutput,
   type PlanningOutput,
   type DevelopmentOutput,
   type TestingOutput,
+  type MergeResolverOutput,
 } from "./schemas/agent"
 
 export {

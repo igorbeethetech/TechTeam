@@ -49,6 +49,8 @@ export interface Demand {
   agentRuns?: AgentRun[]
 }
 
+export type MergeStatus = "pending" | "auto_merged" | "conflict_resolving" | "needs_human" | "merged"
+
 export type AgentStatus =
   | "queued"
   | "running"

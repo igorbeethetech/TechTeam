@@ -1,4 +1,5 @@
-import simpleGit, { type SimpleGit } from "simple-git"
+import path from "node:path"
+import simpleGit, { GitResponseError, type SimpleGit } from "simple-git"
 
 export function createGitClient(repoPath: string): SimpleGit {
   return simpleGit(repoPath, {
@@ -48,5 +49,103 @@ export async function validateGitRepo(repoPath: string): Promise<boolean> {
     return true
   } catch {
     return false
+  }
+}
+
+/**
+ * Attempt to merge a branch into the default branch.
+ * Returns success status and list of conflict files if merge fails.
+ */
+export async function mergeFromBranch(
+  repoPath: string,
+  branchName: string,
+  defaultBranch: string
+): Promise<{ success: boolean; conflictFiles: string[] }> {
+  const git = createGitClient(repoPath)
+  await git.fetch("origin")
+  await git.checkout(defaultBranch)
+  await git.pull("origin", defaultBranch)
+
+  try {
+    await git.merge([branchName, "--no-ff"])
+    return { success: true, conflictFiles: [] }
+  } catch (err) {
+    if (err instanceof GitResponseError) {
+      // Merge conflict -- abort and return conflict files
+      await git.merge(["--abort"])
+      const conflictFiles = err.git.conflicts.map(
+        (c: { file: string | null }) => c.file ?? "unknown"
+      )
+      return { success: false, conflictFiles }
+    }
+    // Non-merge error -- re-throw
+    throw err
+  }
+}
+
+/**
+ * Check if the working directory has conflict markers.
+ * Returns true if conflict markers are found.
+ */
+export async function checkConflictMarkers(
+  repoPath: string
+): Promise<boolean> {
+  const git = createGitClient(repoPath)
+  try {
+    await git.diff(["--check"])
+    return false
+  } catch {
+    // Exit code 2 = conflict markers found
+    return true
+  }
+}
+
+/**
+ * Get the worktree path for a demand's isolated working directory.
+ */
+export function getWorktreePath(repoPath: string, demandId: string): string {
+  return path.join(
+    path.dirname(repoPath),
+    ".worktrees",
+    `${path.basename(repoPath)}-${demandId}`
+  )
+}
+
+/**
+ * Create a new git worktree for isolated branch work.
+ */
+export async function createWorktree(
+  repoPath: string,
+  worktreePath: string,
+  branchName: string,
+  defaultBranch: string
+): Promise<void> {
+  const git = createGitClient(repoPath)
+  await git.raw([
+    "worktree",
+    "add",
+    worktreePath,
+    "-b",
+    branchName,
+    `origin/${defaultBranch}`,
+  ])
+}
+
+/**
+ * Remove a git worktree and prune stale entries.
+ */
+export async function removeWorktree(
+  repoPath: string,
+  worktreePath: string
+): Promise<void> {
+  try {
+    const git = createGitClient(repoPath)
+    await git.raw(["worktree", "remove", worktreePath, "--force"])
+    await git.raw(["worktree", "prune"])
+  } catch (err) {
+    console.warn(
+      `[git] Warning: failed to remove worktree ${worktreePath}:`,
+      err instanceof Error ? err.message : err
+    )
   }
 }

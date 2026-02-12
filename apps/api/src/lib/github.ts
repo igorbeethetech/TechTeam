@@ -45,3 +45,56 @@ export async function createPullRequest(params: CreatePrParams): Promise<string>
 
   return pr.html_url
 }
+
+/**
+ * Merge a pull request via GitHub API.
+ */
+export async function mergePullRequest(params: {
+  repoUrl: string
+  prNumber: number
+  commitTitle: string
+  mergeMethod?: "merge" | "squash" | "rebase"
+}): Promise<{ sha: string }> {
+  const octokit = getOctokit()
+  const { owner, repo } = extractOwnerRepo(params.repoUrl)
+
+  const { data } = await octokit.rest.pulls.merge({
+    owner,
+    repo,
+    pull_number: params.prNumber,
+    commit_title: params.commitTitle,
+    merge_method: params.mergeMethod ?? "merge",
+  })
+
+  return { sha: data.sha }
+}
+
+/**
+ * Close a pull request without merging.
+ */
+export async function closePullRequest(params: {
+  repoUrl: string
+  prNumber: number
+}): Promise<void> {
+  const octokit = getOctokit()
+  const { owner, repo } = extractOwnerRepo(params.repoUrl)
+
+  await octokit.rest.pulls.update({
+    owner,
+    repo,
+    pull_number: params.prNumber,
+    state: "closed",
+  })
+}
+
+/**
+ * Extract the PR number from a GitHub PR URL.
+ * e.g. "https://github.com/owner/repo/pull/42" -> 42
+ */
+export function extractPrNumber(prUrl: string): number {
+  const num = parseInt(prUrl.split("/").pop()!)
+  if (isNaN(num)) {
+    throw new Error(`Cannot extract PR number from URL: ${prUrl}`)
+  }
+  return num
+}

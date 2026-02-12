@@ -95,3 +95,13 @@ export const testingOutputSchema = z.object({
 
 export type DevelopmentOutput = z.infer<typeof developmentOutputSchema>
 export type TestingOutput = z.infer<typeof testingOutputSchema>
+
+// Merge resolver agent output schema
+export const mergeResolverOutputSchema = z.object({
+  resolved: z.boolean().describe("Whether all merge conflicts were resolved"),
+  resolvedFiles: z.array(z.string()).describe("Files where conflicts were resolved"),
+  unresolvedFiles: z.array(z.string()).describe("Files where conflicts could not be resolved"),
+  approach: z.string().describe("Description of the resolution approach taken"),
+})
+
+export type MergeResolverOutput = z.infer<typeof mergeResolverOutputSchema>
