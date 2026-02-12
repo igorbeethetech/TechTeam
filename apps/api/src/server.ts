@@ -7,6 +7,7 @@ import authPlugin from "./plugins/auth.js"
 import tenantPlugin from "./plugins/tenant.js"
 import projectRoutes from "./routes/projects.js"
 import demandRoutes from "./routes/demands.js"
+import agentRunRoutes from "./routes/agent-runs.js"
 
 const app = Fastify({ logger: true })
 
@@ -33,6 +34,7 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(tenantPlugin) // scopes prisma to tenant
   await protectedApp.register(projectRoutes, { prefix: "/api/projects" })
   await protectedApp.register(demandRoutes, { prefix: "/api/demands" })
+  await protectedApp.register(agentRunRoutes, { prefix: "/api/agent-runs" })
 })
 
 // Start server

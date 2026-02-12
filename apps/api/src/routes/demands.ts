@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { demandCreateSchema, demandStageUpdateSchema } from "@techteam/shared"
+import { agentQueue } from "../queues/agent.queue.js"
 
 export default async function demandRoutes(fastify: FastifyInstance) {
   // GET / - List demands, optionally filtered by projectId
@@ -60,6 +61,22 @@ export default async function demandRoutes(fastify: FastifyInstance) {
         where: { id },
         data: { stage: parsed.data.stage },
       })
+
+      // When stage changes to discovery, enqueue agent job
+      if (parsed.data.stage === "discovery") {
+        await agentQueue.add("run-agent", {
+          demandId: id,
+          tenantId: request.session!.session.activeOrganizationId!,
+          projectId: demand.projectId,
+          phase: "discovery",
+        })
+        // Update demand agentStatus to queued
+        await request.prisma.demand.update({
+          where: { id },
+          data: { agentStatus: "queued" },
+        })
+      }
+
       return { demand }
     } catch (error: unknown) {
       if (
