@@ -10,6 +10,7 @@ import demandRoutes from "./routes/demands.js"
 import agentRunRoutes from "./routes/agent-runs.js"
 import mergeRoutes from "./routes/merge.js"
 import metricsRoutes from "./routes/metrics.js"
+import notificationRoutes from "./routes/notifications.js"
 
 const app = Fastify({ logger: true })
 
@@ -39,6 +40,7 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(agentRunRoutes, { prefix: "/api/agent-runs" })
   await protectedApp.register(mergeRoutes, { prefix: "/api" })
   await protectedApp.register(metricsRoutes, { prefix: "/api/metrics" })
+  await protectedApp.register(notificationRoutes, { prefix: "/api/notifications" })
 })
 
 // Start server
