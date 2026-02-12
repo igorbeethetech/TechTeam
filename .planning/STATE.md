@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 3 of 6 (Agent Pipeline)
-Plan: 3 of 3 in current phase (03-01, 03-03 complete, 03-02 remaining)
-Status: In Progress
-Last activity: 2026-02-12 -- Completed 03-03-PLAN.md (demand detail agent output display)
+Phase: 3 of 6 (Agent Pipeline) -- COMPLETE
+Plan: 3 of 3 in current phase (all complete)
+Status: Phase Complete
+Last activity: 2026-02-12 -- Completed 03-02-PLAN.md (discovery and planning agents)
 
-Progress: [████████░░░░░░░░░░░░] 40%
+Progress: [█████████░░░░░░░░░░░] 45%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 14min
-- Total execution time: 1.6 hours
+- Total plans completed: 8
+- Average duration: 13min
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████████░░░░░░░░░░░░] 40%
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 70min | 23min |
 | 02-kanban-demands | 2/2 | 15min | 8min |
-| 03-agent-pipeline | 2/3 | 11min | 6min |
+| 03-agent-pipeline | 3/3 | 17min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (47min), 02-01 (10min), 02-02 (5min), 03-01 (8min), 03-03 (3min)
+- Last 5 plans: 02-01 (10min), 02-02 (5min), 03-01 (8min), 03-03 (3min), 03-02 (6min)
 - Trend: accelerating
 
 *Updated after each plan completion*
@@ -70,6 +70,10 @@ Recent decisions affecting current work:
 - [03-01]: Stub agent files for discovery/planning -- allows TypeScript compilation while deferring implementation to Plans 02/03
 - [03-01]: Worker concurrency set to 2 -- balances throughput with Claude API rate limits
 - [03-01]: Separate Redis connections for Queue (default) and Worker (maxRetriesPerRequest: null) -- BullMQ requirement for blocking commands
+- [03-02]: zod-to-json-schema instead of z.toJSONSchema() -- Zod 3.25.x default export is v3 API; toJSONSchema only in zod/v4 namespace incompatible with v3 schemas
+- [03-02]: Worker persists agent metrics (tokens, cost, duration) on AgentRun and accumulates totals on Demand
+- [03-02]: Worker stores requirements/complexity (discovery) and plan (planning) on Demand for inter-agent communication and UI display
+- [03-02]: Pure agent function pattern -- agents read DB + call AI + return results; worker handles all side effects
 - [03-03]: refetchInterval uses callback form `(query) =>` to avoid circular variable reference when polling depends on fetched data
 - [03-03]: Type assertions (as DiscoveryOutput, as PlanningOutput) for JSON columns since Prisma stores them as unknown
 
@@ -86,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 03-03-PLAN.md (demand detail agent output display)
-Resume file: .planning/phases/03-agent-pipeline/03-03-SUMMARY.md
+Stopped at: Completed 03-02-PLAN.md (discovery and planning agents) -- Phase 3 complete
+Resume file: .planning/phases/03-agent-pipeline/03-02-SUMMARY.md
