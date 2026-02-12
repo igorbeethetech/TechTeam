@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { useSession, signOut } from "@/lib/auth-client"
+import { useSession, signOut, organization } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 
 export default function DashboardLayout({
@@ -15,11 +15,27 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const { data: session, isPending } = useSession()
 
+  const orgFixAttempted = useRef(false)
+
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/login")
     }
   }, [isPending, session, router])
+
+  // Auto-fix: if session exists but no active org, try to set one
+  useEffect(() => {
+    if (!session || orgFixAttempted.current) return
+    if (session.session.activeOrganizationId) return
+
+    orgFixAttempted.current = true
+    organization.list().then((res) => {
+      const orgs = res.data
+      if (orgs && orgs.length > 0) {
+        organization.setActive({ organizationId: orgs[0].id })
+      }
+    })
+  }, [session])
 
   if (isPending) {
     return (

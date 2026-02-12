@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
+import { useQueryClient } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -28,6 +29,7 @@ interface ProjectFormProps {
 
 export function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const isEditing = !!project
 
   const {
@@ -66,6 +68,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
         await api.post("/api/projects", data)
         toast.success("Project created successfully")
       }
+      await queryClient.invalidateQueries({ queryKey: ["projects"] })
       router.push("/projects")
     } catch (error: unknown) {
       const message =
