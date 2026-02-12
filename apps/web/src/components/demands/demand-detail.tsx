@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { PipelineProgress } from "./pipeline-progress"
 import { RequirementsView } from "./requirements-view"
 import { PlanView } from "./plan-view"
+import { DevelopmentView } from "./development-view"
+import { TestingReportView } from "./testing-report-view"
 import { AgentRunList } from "./agent-run-list"
 import {
   STAGE_LABELS,
@@ -15,6 +17,7 @@ import {
   type PipelineStage,
   type DiscoveryOutput,
   type PlanningOutput,
+  type TestingOutput,
 } from "@techteam/shared"
 
 const PRIORITY_COLORS: Record<DemandPriority, string> = {
@@ -177,30 +180,29 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
         </div>
       ) : null}
 
-      {demand.branchName && (
+      {(demand.branchName || demand.prUrl) && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">
-            Branch
+            Development
           </h2>
-          <code className="rounded bg-muted px-2 py-1 text-sm">
-            {demand.branchName}
-          </code>
+          <DevelopmentView
+            branchName={demand.branchName}
+            prUrl={demand.prUrl}
+            developmentOutput={null}
+            rejectionCount={demand.rejectionCount ?? 0}
+          />
         </div>
       )}
 
-      {demand.prUrl && (
+      {demand.testingFeedback != null && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">
-            Pull Request
+            Testing Report
           </h2>
-          <a
-            href={demand.prUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary underline"
-          >
-            {demand.prUrl}
-          </a>
+          <TestingReportView
+            testingOutput={demand.testingFeedback as TestingOutput}
+            isLatestReport={true}
+          />
         </div>
       )}
 
