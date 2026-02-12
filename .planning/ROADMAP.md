@@ -63,13 +63,12 @@ Plans:
   3. Demand detail page shows output of each phase (requirements JSON, plan JSON) and lists all Agent Runs with tokens, cost, and duration
   4. Failed agent jobs retry up to 3 times with exponential backoff, and per-phase timeouts prevent runaway execution
   5. If Discovery detects ambiguity, the demand pauses and the user is notified
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 03-01: BullMQ job queue setup, worker infrastructure, and Claude CLI headless execution
-- [ ] 03-02: Discovery agent (prompts, JSON parsing, complexity estimation, ambiguity detection)
-- [ ] 03-03: Planning agent (prompts, task decomposition, file/dependency mapping)
-- [ ] 03-04: Demand detail UI (phase outputs, agent run logs, cost accumulation)
+- [ ] 03-01-PLAN.md — AgentRun schema, BullMQ queue + worker infrastructure, Redis factory, base agent wrapper, agent-runs API, demand stage trigger
+- [ ] 03-02-PLAN.md — Discovery and Planning agents (prompt builders, structured output schemas, ambiguity detection, task decomposition)
+- [ ] 03-03-PLAN.md — Demand detail UI enhancements (RequirementsView, PlanView, AgentRunList components, agent status indicator)
 
 ### Phase 4: Development and Testing
 **Goal**: Demands generate real code on isolated branches, create PRs, and undergo automated quality review
@@ -127,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-12 |
 | 2. Kanban and Demands | 2/2 | ✓ Complete | 2026-02-12 |
-| 3. Agent Pipeline | 0/4 | Not started | - |
+| 3. Agent Pipeline | 0/3 | Not started | - |
 | 4. Development and Testing | 0/3 | Not started | - |
 | 5. Merge and Concurrency | 0/3 | Not started | - |
 | 6. Metrics and Notifications | 0/2 | Not started | - |
