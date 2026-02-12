@@ -25,4 +25,6 @@ export const config = {
   BETTER_AUTH_URL: optionalEnv("BETTER_AUTH_URL", "http://localhost:3001"),
   WEB_URL: optionalEnv("WEB_URL", "http://localhost:3000"),
   API_PORT: Number(optionalEnv("API_PORT", "3001")),
+  ANTHROPIC_API_KEY: optionalEnv("ANTHROPIC_API_KEY", ""),
+  CLAUDE_MODEL: optionalEnv("CLAUDE_MODEL", "sonnet"),
 } as const

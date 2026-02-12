@@ -1,0 +1,30 @@
+import { Queue } from "bullmq"
+import { createQueueConnection } from "../lib/redis.js"
+
+export interface AgentJobData {
+  demandId: string
+  tenantId: string
+  projectId: string
+  phase: "discovery" | "planning"
+}
+
+export interface AgentJobResult {
+  output: unknown
+  hasAmbiguities?: boolean
+}
+
+export const agentQueue = new Queue<AgentJobData, AgentJobResult>(
+  "agent-pipeline",
+  {
+    connection: createQueueConnection(),
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 500 },
+    },
+  }
+)
