@@ -40,7 +40,14 @@ export function createAgentWorker() {
       try {
         // Dynamically import the correct agent function based on phase
         // Lazy import avoids circular dependencies
-        let agentResult: { output: unknown; hasAmbiguities?: boolean }
+        let agentResult: {
+          output: unknown
+          hasAmbiguities?: boolean
+          tokensIn: number
+          tokensOut: number
+          costUsd: number
+          durationMs: number
+        }
 
         if (phase === "discovery") {
           const { runDiscoveryAgent } = await import(
@@ -66,25 +73,47 @@ export function createAgentWorker() {
           throw new Error(`Unknown phase: ${phase}`)
         }
 
-        // Update AgentRun to completed
+        // Update AgentRun to completed with token/cost metrics
         await prisma.agentRun.update({
           where: { id: agentRun.id },
           data: {
             status: "completed",
             output: agentResult.output as any,
+            tokensIn: agentResult.tokensIn,
+            tokensOut: agentResult.tokensOut,
+            costUsd: agentResult.costUsd,
+            durationMs: agentResult.durationMs,
           },
         })
 
-        // Update demand agentStatus based on result
+        // Update demand agentStatus and accumulate token/cost totals
         await prisma.demand.update({
           where: { id: demandId },
-          data: { agentStatus: null },
+          data: {
+            agentStatus: null,
+            totalTokens: {
+              increment: agentResult.tokensIn + agentResult.tokensOut,
+            },
+            totalCostUsd: { increment: agentResult.costUsd },
+          },
         })
 
-        // Handle stage advancement
+        // Handle stage advancement and store agent output on demand
         if (phase === "discovery") {
+          // Store discovery requirements and complexity on demand
+          const discoveryOutput = agentResult.output as {
+            complexity?: string
+          }
+          await prisma.demand.update({
+            where: { id: demandId },
+            data: {
+              requirements: agentResult.output as any,
+              complexity: (discoveryOutput.complexity as any) ?? null,
+            },
+          })
+
           if (agentResult.hasAmbiguities) {
-            // Keep in discovery, set paused
+            // Keep in discovery, set paused for human clarification
             await prisma.demand.update({
               where: { id: demandId },
               data: { agentStatus: "paused" },
@@ -104,10 +133,14 @@ export function createAgentWorker() {
             })
           }
         } else if (phase === "planning") {
-          // Advance to development (parked for Phase 4)
+          // Store plan on demand and advance to development (parked for Phase 4)
           await prisma.demand.update({
             where: { id: demandId },
-            data: { stage: "development", agentStatus: null },
+            data: {
+              plan: agentResult.output as any,
+              stage: "development",
+              agentStatus: null,
+            },
           })
         }
 
