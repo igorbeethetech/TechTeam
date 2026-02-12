@@ -9,6 +9,7 @@ import { RequirementsView } from "./requirements-view"
 import { PlanView } from "./plan-view"
 import { DevelopmentView } from "./development-view"
 import { TestingReportView } from "./testing-report-view"
+import { MergeStatusView } from "./merge-status-view"
 import { AgentRunList } from "./agent-run-list"
 import {
   STAGE_LABELS,
@@ -206,14 +207,19 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
         </div>
       )}
 
-      {demand.mergeStatus && (
+      {(demand.mergeStatus || demand.stage === "merge") && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">
-            Merge Status
+            Merge
           </h2>
-          <Badge variant="outline">
-            {demand.mergeStatus.replace(/_/g, " ")}
-          </Badge>
+          <MergeStatusView
+            demandId={demand.id}
+            mergeStatus={demand.mergeStatus}
+            mergeConflicts={demand.mergeConflicts}
+            mergeAttempts={demand.mergeAttempts}
+            prUrl={demand.prUrl}
+            branchName={demand.branchName}
+          />
         </div>
       )}
 
