@@ -13,12 +13,12 @@ interface ProjectResponse {
 }
 
 export default function EditProjectPage() {
-  const params = useParams<{ id: string }>()
+  const params = useParams<{ projectId: string }>()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["project", params.id],
-    queryFn: () => api.get<ProjectResponse>(`/api/projects/${params.id}`),
-    enabled: !!params.id,
+    queryKey: ["project", params.projectId],
+    queryFn: () => api.get<ProjectResponse>(`/api/projects/${params.projectId}`),
+    enabled: !!params.projectId,
   })
 
   if (isLoading) {
