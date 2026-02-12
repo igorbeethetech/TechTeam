@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 5 Complete - Ready for Phase 6
+**Current focus:** Phase 6 Plan 01 Complete - Metrics Dashboard
 
 ## Current Position
 
-Phase: 5 of 6 (Merge/Concurrency)
-Plan: 3 of 3 in current phase
-Status: Phase Complete — Verified (14/14 must-haves)
-Last activity: 2026-02-12 -- Phase 5 execution complete, verification passed
+Phase: 6 of 6 (Metrics/Notifications)
+Plan: 1 of 2 in current phase
+Status: Plan 01 Complete
+Last activity: 2026-02-12 -- Phase 6 Plan 01 (Metrics Dashboard) executed
 
-Progress: [█████████████████░░░] 83%
+Progress: [██████████████████░░] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 9min
-- Total execution time: 2.12 hours
+- Total execution time: 2.20 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [█████████████████░░░] 83%
 | 03-agent-pipeline | 3/3 | 17min | 6min |
 | 04-dev-testing | 3/3 | 16min | 5min |
 | 05-merge-concurrency | 3/3 | 7min | 2min |
+| 06-metrics-notifications | 1/2 | 5min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (11min), 04-03 (2min), 04-02 (3min), 05-01 (4min), 05-03 (3min)
+- Last 5 plans: 04-02 (3min), 05-01 (4min), 05-03 (3min), 05-02 (0min), 06-01 (5min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 05-02]: Merge-resolver uses CLAUDE_DEV_MODEL for code understanding quality
 - [Phase 05-02]: Double verification after AI resolution: git status conflicted check + conflict marker grep before commit
 - [Phase 05-02]: Prisma namespace exported from database package to enable Prisma.DbNull for JSON null clearing
+- [06-01]: groupBy operation added to tenant extension interception -- was missing, critical for tenant-isolated metrics aggregation
+- [06-01]: completedAt DateTime? field on Demand model -- updatedAt unreliable for completion tracking since any later update changes it
+- [06-01]: Raw SQL ($queryRaw) bypasses tenant extension -- always include WHERE tenantId = ${tenantId} manually; COUNT(*)::int to avoid BigInt serialization
+- [06-01]: shadcn ChartContainer requires min-h-[300px] class for charts to render visible height
 
 ### Pending Todos
 
@@ -108,5 +113,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Phase 5 execution complete, verification passed (14/14)
-Resume file: .planning/phases/05-merge-concurrency/05-VERIFICATION.md
+Stopped at: Completed 06-01-PLAN.md (Metrics Dashboard)
+Resume file: .planning/phases/06-metrics-notifications/06-01-SUMMARY.md
