@@ -111,11 +111,11 @@ Plans:
   1. Dashboard shows total cost per project for the current month
   2. Dashboard shows demands completed per week as a chart, average time per phase, and agent success rate
   3. User receives in-app notification when an agent fails, when merge needs human intervention, and when a demand reaches Done
-**Plans**: TBD
+**Plans:** 2 plans across 2 waves
 
 Plans:
-- [ ] 06-01: Metrics dashboard (cost per project, demands/week chart, time per phase, agent success rate)
-- [ ] 06-02: In-app notification system (agent failures, merge escalation, demand completion)
+- [ ] 06-01-PLAN.md — Schema updates (completedAt, Notification model), metrics API (cost, throughput, time per phase, success rate), metrics dashboard UI with charts
+- [ ] 06-02-PLAN.md — Notification API, worker notification emission, notification bell with panel in dashboard header
 
 ## Progress
 
