@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 3 of 6 (Agent Pipeline)
-Plan: 1 of 3 in current phase (03-01 complete)
+Plan: 3 of 3 in current phase (03-01, 03-03 complete, 03-02 remaining)
 Status: In Progress
-Last activity: 2026-02-12 -- Completed 03-01-PLAN.md (agent pipeline infrastructure)
+Last activity: 2026-02-12 -- Completed 03-03-PLAN.md (demand detail agent output display)
 
-Progress: [███████░░░░░░░░░░░░░] 35%
+Progress: [████████░░░░░░░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 16min
-- Total execution time: 1.55 hours
+- Total plans completed: 7
+- Average duration: 14min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [███████░░░░░░░░░░░░░] 35%
 |-------|-------|-------|----------|
 | 01-foundation | 3/3 | 70min | 23min |
 | 02-kanban-demands | 2/2 | 15min | 8min |
-| 03-agent-pipeline | 1/3 | 8min | 8min |
+| 03-agent-pipeline | 2/3 | 11min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (47min), 02-01 (10min), 02-02 (5min), 03-01 (8min)
-- Trend: stable
+- Last 5 plans: 01-03 (47min), 02-01 (10min), 02-02 (5min), 03-01 (8min), 03-03 (3min)
+- Trend: accelerating
 
 *Updated after each plan completion*
 
@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - [03-01]: Stub agent files for discovery/planning -- allows TypeScript compilation while deferring implementation to Plans 02/03
 - [03-01]: Worker concurrency set to 2 -- balances throughput with Claude API rate limits
 - [03-01]: Separate Redis connections for Queue (default) and Worker (maxRetriesPerRequest: null) -- BullMQ requirement for blocking commands
+- [03-03]: refetchInterval uses callback form `(query) =>` to avoid circular variable reference when polling depends on fetched data
+- [03-03]: Type assertions (as DiscoveryOutput, as PlanningOutput) for JSON columns since Prisma stores them as unknown
 
 ### Pending Todos
 
@@ -84,5 +86,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 03-01-PLAN.md (agent pipeline infrastructure)
-Resume file: .planning/phases/03-agent-pipeline/03-01-SUMMARY.md
+Stopped at: Completed 03-03-PLAN.md (demand detail agent output display)
+Resume file: .planning/phases/03-agent-pipeline/03-03-SUMMARY.md
