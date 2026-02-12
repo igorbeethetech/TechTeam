@@ -4,15 +4,18 @@
 // Import config first to trigger dotenv loading
 import "./src/lib/config.js"
 import { createAgentWorker } from "./src/queues/agent.worker.js"
+import { createMergeWorker } from "./src/queues/merge.worker.js"
 
-const worker = createAgentWorker()
+const agentWorker = createAgentWorker()
+const mergeWorker = createMergeWorker()
 
 console.log("[agent-worker] Agent worker started")
+console.log("[merge-worker] Merge worker started")
 
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
-  console.log(`[agent-worker] Received ${signal}, closing worker...`)
-  await worker.close()
+  console.log(`[worker] Received ${signal}, closing workers...`)
+  await Promise.all([agentWorker.close(), mergeWorker.close()])
   process.exit(0)
 }
 

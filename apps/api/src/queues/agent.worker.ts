@@ -483,13 +483,19 @@ async function handleTestingPhase(ctx: {
 
   // 4/5. Handle verdict
   if (testResult.approved) {
-    // Approved: advance to merge
+    // Approved: advance to merge and enqueue merge job
     await prisma.demand.update({
       where: { id: demandId },
-      data: { stage: "merge", agentStatus: null },
+      data: { stage: "merge", agentStatus: "queued" },
+    })
+    const { mergeQueue } = await import("./merge.queue.js")
+    await mergeQueue.add("merge-demand", {
+      demandId,
+      tenantId,
+      projectId,
     })
     console.log(
-      `[agent-worker] Testing approved: demandId=${demandId}, advancing to merge`
+      `[agent-worker] Testing approved: demandId=${demandId}, enqueuing merge job`
     )
   } else {
     // Rejected: increment rejection count and check threshold
