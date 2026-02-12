@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 5 of 6 (Merge/Concurrency)
-Plan: 1 of 3 in current phase
-Status: In Progress
-Last activity: 2026-02-12 -- Completed 05-01-PLAN.md (merge queue infrastructure + Step 1 auto-merge)
+Plan: 3 of 3 in current phase
+Status: Phase Complete
+Last activity: 2026-02-12 -- Completed 05-03-PLAN.md (dev concurrency gating + merge status dashboard)
 
-Progress: [██████████████░░░░░░] 70%
+Progress: [█████████████████░░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 10min
-- Total execution time: 2.05 hours
+- Total plans completed: 14
+- Average duration: 9min
+- Total execution time: 2.12 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [██████████████░░░░░░] 70%
 | 02-kanban-demands | 2/2 | 15min | 8min |
 | 03-agent-pipeline | 3/3 | 17min | 6min |
 | 04-dev-testing | 3/3 | 16min | 5min |
-| 05-merge-concurrency | 1/3 | 4min | 4min |
+| 05-merge-concurrency | 3/3 | 7min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (6min), 04-01 (11min), 04-03 (2min), 04-02 (3min), 05-01 (4min)
+- Last 5 plans: 04-01 (11min), 04-03 (2min), 04-02 (3min), 05-01 (4min), 05-03 (3min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -90,6 +90,8 @@ Recent decisions affecting current work:
 - [05-01]: Post-merge tests lenient for v1 -- testing agent already validated code before merge
 - [05-01]: Merge worker concurrency 1 globally -- simpler than per-project serialization, sufficient for v1 scale
 - [05-01]: Conflicts stub directly to needs_human -- Steps 2/3 deferred to Plan 02
+- [05-03]: Dev slot released after development (before testing) -- maximizes throughput since testing doesn't need repo isolation
+- [05-03]: Worktree only for maxConcurrentDev > 1 -- single-dev projects use standard branch checkout
 
 ### Pending Todos
 
@@ -104,5 +106,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 05-01-PLAN.md (merge queue infrastructure + Step 1 auto-merge)
-Resume file: .planning/phases/05-merge-concurrency/05-01-SUMMARY.md
+Stopped at: Completed 05-03-PLAN.md (dev concurrency gating + merge status dashboard) -- Phase 5 complete
+Resume file: .planning/phases/05-merge-concurrency/05-03-SUMMARY.md
