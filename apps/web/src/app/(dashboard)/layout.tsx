@@ -73,6 +73,16 @@ export default function DashboardLayout({
               >
                 Projects
               </Link>
+              <Link
+                href="/metrics"
+                className={`text-sm transition-colors hover:text-foreground ${
+                  pathname.startsWith("/metrics")
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Metrics
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">
