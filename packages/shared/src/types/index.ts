@@ -40,7 +40,34 @@ export interface Demand {
   mergeAttempts: number
   totalTokens: number
   totalCostUsd: number
+  agentStatus: string | null
   createdBy: string
+  createdAt: Date
+  updatedAt: Date
+  agentRuns?: AgentRun[]
+}
+
+export type AgentStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "timeout"
+  | "paused"
+
+export interface AgentRun {
+  id: string
+  tenantId: string
+  demandId: string
+  phase: DemandStage
+  status: AgentStatus
+  tokensIn: number
+  tokensOut: number
+  costUsd: number
+  durationMs: number
+  output: unknown
+  error: string | null
+  attempt: number
   createdAt: Date
   updatedAt: Date
 }

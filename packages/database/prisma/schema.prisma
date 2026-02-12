@@ -172,7 +172,9 @@ model Demand {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  agentStatus     String?
   project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agentRuns       AgentRun[]
 
   @@index([tenantId])
   @@index([projectId])
@@ -210,4 +212,38 @@ enum MergeStatus {
   conflict_resolving
   needs_human
   merged
+}
+
+// === AGENT PIPELINE ===
+
+enum AgentStatus {
+  queued
+  running
+  completed
+  failed
+  timeout
+  paused
+}
+
+model AgentRun {
+  id         String      @id @default(cuid())
+  tenantId   String
+  demandId   String
+  phase      DemandStage
+  status     AgentStatus
+  tokensIn   Int         @default(0)
+  tokensOut  Int         @default(0)
+  costUsd    Float       @default(0)
+  durationMs Int         @default(0)
+  output     Json?
+  error      String?     @db.Text
+  attempt    Int         @default(1)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  demand     Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([demandId])
+  @@index([demandId, phase])
 }

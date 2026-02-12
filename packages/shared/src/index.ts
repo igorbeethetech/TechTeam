@@ -21,7 +21,16 @@ export {
   type DemandStage,
   type DemandPriority,
   type Demand,
+  type AgentStatus,
+  type AgentRun,
 } from "./types/index"
+
+export {
+  discoveryOutputSchema,
+  planningOutputSchema,
+  type DiscoveryOutput,
+  type PlanningOutput,
+} from "./schemas/agent"
 
 export {
   PROJECT_STATUS,
