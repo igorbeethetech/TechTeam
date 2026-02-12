@@ -13,6 +13,7 @@
     "@anthropic-ai/claude-agent-sdk": "^0.2.39",
     "@fastify/cookie": "^11.0.0",
     "@fastify/cors": "^11.0.0",
+    "@octokit/rest": "^22.0.1",
     "@techteam/database": "workspace:*",
     "@techteam/shared": "workspace:*",
     "better-auth": "^1.4.18",
@@ -21,6 +22,7 @@
     "fastify": "^5.7.0",
     "fastify-plugin": "^5.1.0",
     "ioredis": "^5.9.2",
+    "simple-git": "^3.30.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.25.1"
   },

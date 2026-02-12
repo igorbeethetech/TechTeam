@@ -18,6 +18,8 @@ function optionalEnv(name: string, defaultValue: string): string {
   return process.env[name] || defaultValue
 }
 
+const claudeModel = optionalEnv("CLAUDE_MODEL", "sonnet")
+
 export const config = {
   DATABASE_URL: requireEnv("DATABASE_URL"),
   REDIS_URL: optionalEnv("REDIS_URL", "redis://localhost:6380"),
@@ -26,5 +28,7 @@ export const config = {
   WEB_URL: optionalEnv("WEB_URL", "http://localhost:3000"),
   API_PORT: Number(optionalEnv("API_PORT", "3001")),
   ANTHROPIC_API_KEY: optionalEnv("ANTHROPIC_API_KEY", ""),
-  CLAUDE_MODEL: optionalEnv("CLAUDE_MODEL", "sonnet"),
+  CLAUDE_MODEL: claudeModel,
+  CLAUDE_DEV_MODEL: optionalEnv("CLAUDE_DEV_MODEL", claudeModel),
+  GITHUB_TOKEN: optionalEnv("GITHUB_TOKEN", ""),
 } as const

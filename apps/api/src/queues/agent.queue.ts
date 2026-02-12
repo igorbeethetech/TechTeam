@@ -5,7 +5,7 @@ export interface AgentJobData {
   demandId: string
   tenantId: string
   projectId: string
-  phase: "discovery" | "planning"
+  phase: "discovery" | "planning" | "development" | "testing"
 }
 
 export interface AgentJobResult {

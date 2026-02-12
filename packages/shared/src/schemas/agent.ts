@@ -62,3 +62,36 @@ export const planningOutputSchema = z.object({
 
 export type DiscoveryOutput = z.infer<typeof discoveryOutputSchema>
 export type PlanningOutput = z.infer<typeof planningOutputSchema>
+
+// Development agent output schema
+export const developmentOutputSchema = z.object({
+  commitMessage: z.string().describe("A concise commit message summarizing the changes made"),
+  filesChanged: z.array(z.string()).describe("List of file paths that were created or modified"),
+  approach: z.string().describe("Brief explanation of the implementation approach taken"),
+  notes: z.string().optional().describe("Any caveats, known issues, or follow-up items"),
+})
+
+// Testing agent output schema
+export const testingOutputSchema = z.object({
+  verdict: z.enum(["approved", "rejected"]).describe("Whether the PR passes quality review"),
+  summary: z.string().describe("Overall assessment of the changes"),
+  testResults: z.object({
+    testsRan: z.boolean().describe("Whether automated tests were executed"),
+    testsPassed: z.boolean().optional().describe("Whether all tests passed (if tests ran)"),
+    testOutput: z.string().optional().describe("Relevant test output or error messages"),
+  }),
+  codeQuality: z.object({
+    adheresToPlan: z.boolean().describe("Whether the implementation follows the planning agent's task plan"),
+    adheresToRequirements: z.boolean().describe("Whether the implementation satisfies the discovery agent's requirements"),
+    issues: z.array(z.object({
+      severity: z.enum(["critical", "major", "minor", "suggestion"]),
+      file: z.string(),
+      description: z.string(),
+      suggestion: z.string().optional(),
+    })).describe("List of code quality issues found"),
+  }),
+  rejectionReasons: z.array(z.string()).optional().describe("Specific reasons for rejection, if verdict is rejected"),
+})
+
+export type DevelopmentOutput = z.infer<typeof developmentOutputSchema>
+export type TestingOutput = z.infer<typeof testingOutputSchema>

@@ -35,6 +35,8 @@ export interface Demand {
   plan: unknown
   branchName: string | null
   prUrl: string | null
+  rejectionCount: number
+  testingFeedback: unknown
   mergeStatus: string | null
   mergeConflicts: unknown
   mergeAttempts: number

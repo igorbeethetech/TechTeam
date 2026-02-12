@@ -163,6 +163,8 @@ model Demand {
   plan            Json?
   branchName      String?
   prUrl           String?
+  rejectionCount  Int            @default(0)
+  testingFeedback Json?
   mergeStatus     MergeStatus?
   mergeConflicts  Json?
   mergeAttempts   Int            @default(0)

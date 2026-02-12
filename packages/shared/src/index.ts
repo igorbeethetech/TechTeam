@@ -28,8 +28,12 @@ export {
 export {
   discoveryOutputSchema,
   planningOutputSchema,
+  developmentOutputSchema,
+  testingOutputSchema,
   type DiscoveryOutput,
   type PlanningOutput,
+  type DevelopmentOutput,
+  type TestingOutput,
 } from "./schemas/agent"
 
 export {
