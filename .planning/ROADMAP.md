@@ -13,7 +13,7 @@ The TechTeam Platform delivers AI-powered software development automation throug
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Monorepo, database, auth, multi-tenant isolation, and project CRUD
-- [ ] **Phase 2: Kanban and Demands** - Interactive board with 7 columns, demand creation, and detail views
+- [x] **Phase 2: Kanban and Demands** - Interactive board with 7 columns, demand creation, and detail views
 - [ ] **Phase 3: Agent Pipeline** - BullMQ job queue, Discovery agent, Planning agent, and agent execution tracking
 - [ ] **Phase 4: Development and Testing** - Code generation agent, PR creation, testing agent, and feedback loop
 - [ ] **Phase 5: Merge and Concurrency** - 3-tier merge strategy, merge queue, and concurrent development control
@@ -50,8 +50,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Demand model, API, tenant isolation, and Kanban board with drag-and-drop + polling
-- [ ] 02-02-PLAN.md — Demand creation form, project linking, and demand detail page with progress bar
+- [x] 02-01-PLAN.md — Demand model, API, tenant isolation, and Kanban board with drag-and-drop + polling
+- [x] 02-02-PLAN.md — Demand creation form, project linking, and demand detail page with progress bar
 
 ### Phase 3: Agent Pipeline
 **Goal**: Demands move automatically through Discovery and Planning phases via AI agents, with full execution visibility
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-12 |
-| 2. Kanban and Demands | 0/2 | Not started | - |
+| 2. Kanban and Demands | 2/2 | ✓ Complete | 2026-02-12 |
 | 3. Agent Pipeline | 0/4 | Not started | - |
 | 4. Development and Testing | 0/3 | Not started | - |
 | 5. Merge and Concurrency | 0/3 | Not started | - |
