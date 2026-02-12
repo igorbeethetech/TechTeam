@@ -90,6 +90,20 @@ export default async function demandRoutes(fastify: FastifyInstance) {
         })
       }
 
+      // When stage changes to merge, enqueue merge job
+      if (parsed.data.stage === "merge") {
+        const { mergeQueue } = await import("../queues/merge.queue.js")
+        await mergeQueue.add("merge-demand", {
+          demandId: id,
+          tenantId: request.session!.session.activeOrganizationId!,
+          projectId: demand.projectId,
+        })
+        await request.prisma.demand.update({
+          where: { id },
+          data: { agentStatus: "queued" },
+        })
+      }
+
       return { demand }
     } catch (error: unknown) {
       if (

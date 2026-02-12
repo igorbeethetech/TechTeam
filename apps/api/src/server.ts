@@ -8,6 +8,7 @@ import tenantPlugin from "./plugins/tenant.js"
 import projectRoutes from "./routes/projects.js"
 import demandRoutes from "./routes/demands.js"
 import agentRunRoutes from "./routes/agent-runs.js"
+import mergeRoutes from "./routes/merge.js"
 
 const app = Fastify({ logger: true })
 
@@ -35,6 +36,7 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(projectRoutes, { prefix: "/api/projects" })
   await protectedApp.register(demandRoutes, { prefix: "/api/demands" })
   await protectedApp.register(agentRunRoutes, { prefix: "/api/agent-runs" })
+  await protectedApp.register(mergeRoutes, { prefix: "/api" })
 })
 
 // Start server
