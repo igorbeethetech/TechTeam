@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Agent Pipeline** - BullMQ job queue, Discovery agent, Planning agent, and agent execution tracking
 - [x] **Phase 4: Development and Testing** - Code generation agent, PR creation, testing agent, and feedback loop
 - [x] **Phase 5: Merge and Concurrency** - 3-tier merge strategy, merge queue, and concurrent development control
-- [ ] **Phase 6: Metrics and Notifications** - Cost/performance dashboards and in-app notification system
+- [x] **Phase 6: Metrics and Notifications** - Cost/performance dashboards and in-app notification system
 
 ## Phase Details
 
@@ -114,8 +114,8 @@ Plans:
 **Plans:** 2 plans across 2 waves
 
 Plans:
-- [ ] 06-01-PLAN.md — Schema updates (completedAt, Notification model), metrics API (cost, throughput, time per phase, success rate), metrics dashboard UI with charts
-- [ ] 06-02-PLAN.md — Notification API, worker notification emission, notification bell with panel in dashboard header
+- [x] 06-01-PLAN.md — Schema updates (completedAt, Notification model), metrics API (cost, throughput, time per phase, success rate), metrics dashboard UI with charts
+- [x] 06-02-PLAN.md — Notification API, worker notification emission, notification bell with panel in dashboard header
 
 ## Progress
 
@@ -129,4 +129,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Agent Pipeline | 3/3 | ✓ Complete | 2026-02-12 |
 | 4. Development and Testing | 3/3 | ✓ Complete | 2026-02-12 |
 | 5. Merge and Concurrency | 3/3 | ✓ Complete | 2026-02-12 |
-| 6. Metrics and Notifications | 0/2 | Not started | - |
+| 6. Metrics and Notifications | 2/2 | ✓ Complete | 2026-02-12 |
