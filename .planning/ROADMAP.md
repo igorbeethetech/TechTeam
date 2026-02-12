@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can list, edit, and archive projects -- and only sees projects belonging to their own tenant
   4. Monorepo builds successfully with shared types between frontend and backend
   5. Docker Compose starts PostgreSQL and Redis with a single command, and Prisma migrations run cleanly
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 01-01: Monorepo scaffolding, Docker Compose, Prisma schema, and shared packages
-- [ ] 01-02: Authentication (register, login, logout, JWT with tenantId, session persistence)
-- [ ] 01-03: Multi-tenant middleware and project CRUD API + UI
+- [ ] 01-01-PLAN.md — Monorepo scaffolding, Docker Compose, Prisma 7 schema, and shared packages
+- [ ] 01-02-PLAN.md — Better Auth setup (register, login, logout, session persistence with organization plugin)
+- [ ] 01-03-PLAN.md — Multi-tenant Prisma Client Extensions and project CRUD API + UI
 
 ### Phase 2: Kanban and Demands
 **Goal**: Users can visualize their workflow on a Kanban board and create demands that flow through the pipeline
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 0/3 | Planned | - |
 | 2. Kanban and Demands | 0/2 | Not started | - |
 | 3. Agent Pipeline | 0/4 | Not started | - |
 | 4. Development and Testing | 0/3 | Not started | - |
