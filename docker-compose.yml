@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: techteam
+      POSTGRES_USER: techteam
+      POSTGRES_PASSWORD: techteam_dev
+    volumes:
+      - techteam_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U techteam"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - techteam_redisdata:/data
+
+volumes:
+  techteam_pgdata:
+  techteam_redisdata:
