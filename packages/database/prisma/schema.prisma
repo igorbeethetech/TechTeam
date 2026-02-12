@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// === AUTH TABLES (managed by Better Auth) ===
+// Better Auth creates: user, session, account, verification tables
+// These will be added in Plan 02 via: npx @better-auth/cli generate
+// Then merged with our custom models
+
+// === TENANT / ORGANIZATION ===
+// Better Auth organization plugin creates: organization, member, invitation tables
+// These will be added in Plan 02 alongside auth tables
+
+// === CUSTOM MODELS ===
+
+model Project {
+  id               String        @id @default(cuid())
+  tenantId         String // Maps to organization.id from Better Auth
+  name             String
+  description      String?
+  repoUrl          String
+  repoPath         String
+  defaultBranch    String        @default("main")
+  techStack        String
+  status           ProjectStatus @default(active)
+  maxConcurrentDev Int           @default(1)
+  mergeStrategy    MergeStrategy @default(fifo)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([tenantId])
+}
+
+enum ProjectStatus {
+  active
+  archived
+}
+
+enum MergeStrategy {
+  fifo
+  priority
+}
