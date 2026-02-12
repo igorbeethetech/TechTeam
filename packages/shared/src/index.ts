@@ -3,17 +3,17 @@ export {
   projectUpdateSchema,
   type ProjectCreate,
   type ProjectUpdate,
-} from "./schemas/project.js"
+} from "./schemas/project"
 
 export {
   type ProjectStatus,
   type MergeStrategy,
   type Project,
-} from "./types/index.js"
+} from "./types/index"
 
 export {
   PROJECT_STATUS,
   MERGE_STRATEGY,
   PIPELINE_STAGES,
   type PipelineStage,
-} from "./constants/index.js"
+} from "./constants/index"
