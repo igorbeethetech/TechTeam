@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Executing
-Last activity: 2026-02-12 -- Completed 01-01-PLAN.md (monorepo scaffold)
+Last activity: 2026-02-12 -- Completed 01-02-PLAN.md (authentication)
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 6%
+Progress: [████░░░░░░░░░░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 14min
-- Total execution time: 0.23 hours
+- Total plans completed: 2
+- Average duration: 12min
+- Total execution time: 0.38 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1/3 | 14min | 14min |
+| 01-foundation | 2/3 | 23min | 12min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (14min)
-- Trend: baseline
+- Last 5 plans: 01-01 (14min), 01-02 (9min)
+- Trend: improving
 
 *Updated after each plan completion*
 
@@ -50,6 +50,9 @@ Recent decisions affecting current work:
 - [01-01]: Package exports need "default" condition alongside "import" for tsx CJS resolver compatibility
 - [01-01]: @fastify/cookie latest is v11 (not v12) -- research version was incorrect
 - [01-01]: Prisma 7 prisma.config.ts requires dotenv loaded before env() call
+- [01-02]: Better Auth models added manually -- @better-auth/cli generate hangs without existing auth config
+- [01-02]: Root page.tsx removed -- (dashboard) route group owns / path to avoid Next.js route conflict
+- [01-02]: Organization created on signup with slug from email prefix -- ensures immediate tenant context
 
 ### Pending Todos
 
@@ -64,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 01-01-PLAN.md
-Resume file: .planning/phases/01-foundation/01-01-SUMMARY.md
+Stopped at: Completed 01-02-PLAN.md
+Resume file: .planning/phases/01-foundation/01-02-SUMMARY.md
