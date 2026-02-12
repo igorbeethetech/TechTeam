@@ -134,6 +134,7 @@ model Project {
   updatedAt        DateTime      @updatedAt
 
   demands          Demand[]
+  notifications    Notification[]
 
   @@index([tenantId])
 }
@@ -173,10 +174,12 @@ model Demand {
   createdBy       String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  completedAt     DateTime?
 
   agentStatus     String?
   project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   agentRuns       AgentRun[]
+  notifications   Notification[]
 
   @@index([tenantId])
   @@index([projectId])
@@ -248,4 +251,30 @@ model AgentRun {
   @@index([tenantId])
   @@index([demandId])
   @@index([demandId, phase])
+}
+
+// === NOTIFICATIONS ===
+
+enum NotificationType {
+  agent_failed
+  merge_needs_human
+  demand_done
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  tenantId   String
+  type       NotificationType
+  title      String
+  message    String
+  demandId   String?
+  projectId  String?
+  read       Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  demand     Demand?          @relation(fields: [demandId], references: [id], onDelete: SetNull)
+  project    Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, read, createdAt])
+  @@index([tenantId, createdAt])
 }

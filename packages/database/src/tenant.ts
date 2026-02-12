@@ -2,7 +2,7 @@ import { prisma } from "./client.js"
 
 // Models that require tenant filtering
 // User is managed by Better Auth separately
-const TENANT_MODELS = ["Project", "Demand", "AgentRun"] as const
+const TENANT_MODELS = ["Project", "Demand", "AgentRun", "Notification"] as const
 
 export function forTenant(tenantId: string) {
   return prisma.$extends({
@@ -26,7 +26,8 @@ export function forTenant(tenantId: string) {
             operation === "findFirst" ||
             operation === "findUnique" ||
             operation === "count" ||
-            operation === "aggregate"
+            operation === "aggregate" ||
+            operation === "groupBy"
           ) {
             args.where = { ...args.where, tenantId }
           }
