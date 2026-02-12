@@ -1,7 +1,18 @@
 import { Worker, type Job } from "bullmq"
+import IORedis from "ioredis"
 import { createWorkerConnection } from "../lib/redis.js"
+import { config } from "../lib/config.js"
 import { forTenant } from "@techteam/database"
 import type { AgentJobData, AgentJobResult } from "./agent.queue.js"
+
+// Reusable Redis client for concurrency operations (dev slot semaphore)
+let concurrencyRedis: IORedis | null = null
+function getConcurrencyRedis(): IORedis {
+  if (!concurrencyRedis) {
+    concurrencyRedis = new IORedis(config.REDIS_URL)
+  }
+  return concurrencyRedis
+}
 
 // Timeout per phase (AGENT-07 requirement)
 const PHASE_TIMEOUTS: Record<string, number> = {
@@ -271,6 +282,9 @@ export function createAgentWorker() {
 /**
  * Handles the development phase: validate repo, branch, invoke dev agent,
  * commit, push, create PR, advance to testing.
+ *
+ * CONC-01/CONC-02: Development phase requires dev slot gating.
+ * Discovery and Planning (CONC-03) run freely in parallel -- no slot needed.
  */
 async function handleDevelopmentPhase(ctx: {
   demandId: string
@@ -282,20 +296,11 @@ async function handleDevelopmentPhase(ctx: {
 }) {
   const { demandId, tenantId, projectId, phase, prisma, agentRun } = ctx
 
-  // Dynamic imports (same pattern as discovery/planning)
-  const { runDevelopmentAgent } = await import(
-    "../agents/development.agent.js"
-  )
-  const {
-    createIsolatedBranch,
-    commitAndPush,
-    resetWorkingDir,
-    validateGitRepo,
-    createGitClient,
-  } = await import("../lib/git.js")
-  const { createPullRequest } = await import("../lib/github.js")
+  // --- Concurrency gating ---
+  const { acquireDevSlot, releaseDevSlot } = await import("../lib/concurrency.js")
+  const redis = getConcurrencyRedis()
 
-  // 1. Fetch demand and project
+  // Fetch demand and project early (project needed for maxConcurrentDev slot check)
   const demand = await prisma.demand.findUniqueOrThrow({
     where: { id: demandId },
   })
@@ -303,112 +308,193 @@ async function handleDevelopmentPhase(ctx: {
     where: { id: projectId },
   })
 
-  // 2. Validate repoPath exists and is a git repo
-  const isValid = await validateGitRepo(project.repoPath)
-  if (!isValid) {
-    throw new Error(
-      "Project repoPath does not exist or is not a git repository"
-    )
-  }
+  const acquired = await acquireDevSlot(
+    redis, projectId, demandId, project.maxConcurrentDev
+  )
 
-  // 3. Branch management
-  let branchName = demand.branchName as string | null
-  if (!branchName) {
-    // First run: create isolated branch
-    const slug = demand.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .slice(0, 50)
-    branchName = `demand/${demand.id}-${slug}`
-    await createIsolatedBranch(project.repoPath, branchName, project.defaultBranch)
-    await prisma.demand.update({
-      where: { id: demandId },
-      data: { branchName },
-    })
-  } else {
-    // Rejection re-entry: checkout existing branch
-    const git = createGitClient(project.repoPath)
-    await git.checkout(branchName)
-  }
-
-  try {
-    // 4. Invoke development agent
-    const agentResult = await runDevelopmentAgent({
-      demandId,
-      tenantId,
-      projectId,
-      timeout: PHASE_TIMEOUTS[phase]!,
-      rejectionFeedback: (demand.testingFeedback as unknown) ?? undefined,
-    })
-
-    // Update AgentRun to completed
-    await prisma.agentRun.update({
-      where: { id: agentRun.id },
-      data: {
-        status: "completed",
-        output: agentResult.output as any,
-        tokensIn: agentResult.tokensIn,
-        tokensOut: agentResult.tokensOut,
-        costUsd: agentResult.costUsd,
-        durationMs: agentResult.durationMs,
-      },
-    })
-
-    // Accumulate token/cost totals
-    await prisma.demand.update({
-      where: { id: demandId },
-      data: {
-        totalTokens: {
-          increment: agentResult.tokensIn + agentResult.tokensOut,
-        },
-        totalCostUsd: { increment: agentResult.costUsd },
-      },
-    })
-
-    // 5. Commit and push
-    const commitMessage =
-      agentResult.output?.commitMessage ??
-      `feat(demand/${demand.id}): ${demand.title}`
-    await commitAndPush(project.repoPath, branchName, commitMessage)
-
-    // 6. PR management
-    const prUrl = demand.prUrl as string | null
-    if (!prUrl) {
-      // First run: create PR
-      const newPrUrl = await createPullRequest({
-        repoUrl: project.repoUrl,
-        title: `[Demand ${demand.id}] ${demand.title}`,
-        body: buildPrBody(demand, agentResult.output),
-        head: branchName,
-        base: project.defaultBranch,
-      })
-      await prisma.demand.update({
-        where: { id: demandId },
-        data: { prUrl: newPrUrl },
-      })
-    }
-    // If prUrl exists, the push already updates the existing PR
-
-    // 7. Advance to testing
-    await prisma.demand.update({
-      where: { id: demandId },
-      data: { stage: "testing", agentStatus: "queued" },
-    })
+  if (!acquired) {
+    // No available dev slot -- re-enqueue with delay
     const { agentQueue } = await import("./agent.queue.js")
     await agentQueue.add("run-agent", {
       demandId,
       tenantId,
       projectId,
-      phase: "testing",
+      phase: "development",
+    }, {
+      delay: 30_000, // 30 seconds
+      jobId: `dev-retry-${demandId}-${Date.now()}`,
+    })
+
+    // Update demand to show it's waiting
+    await prisma.demand.update({
+      where: { id: demandId },
+      data: { agentStatus: "queued" },
+    })
+
+    // Delete the AgentRun we just created (it's not a real run)
+    await prisma.agentRun.delete({
+      where: { id: agentRun.id },
     })
 
     console.log(
-      `[agent-worker] Development completed: demandId=${demandId}, branch=${branchName}`
+      `[agent-worker] Dev slot full for project ${projectId}: demandId=${demandId}, re-enqueuing with 30s delay`
     )
-  } catch (error: unknown) {
-    // 8. Error handling: clean up dirty files on development failure
-    await resetWorkingDir(project.repoPath)
-    throw error
+    return
+  }
+
+  // --- Dev slot acquired, proceed with development ---
+  try {
+    // Dynamic imports (same pattern as discovery/planning)
+    const { runDevelopmentAgent } = await import(
+      "../agents/development.agent.js"
+    )
+    const {
+      createIsolatedBranch,
+      commitAndPush,
+      resetWorkingDir,
+      validateGitRepo,
+      createGitClient,
+      getWorktreePath,
+      createWorktree,
+    } = await import("../lib/git.js")
+    const { createPullRequest } = await import("../lib/github.js")
+
+    // 1. Validate repoPath exists and is a git repo
+    const isValid = await validateGitRepo(project.repoPath)
+    if (!isValid) {
+      throw new Error(
+        "Project repoPath does not exist or is not a git repository"
+      )
+    }
+
+    // 2. Branch and worktree management
+    let branchName = demand.branchName as string | null
+    let effectiveRepoPath = project.repoPath
+    let usingWorktree = false
+
+    // Use worktree when maxConcurrentDev > 1 to isolate concurrent development
+    if (project.maxConcurrentDev > 1) {
+      const worktreePath = getWorktreePath(project.repoPath, demandId)
+      if (!branchName) {
+        // First run: create worktree with new branch
+        const slug = demand.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50)
+        branchName = `demand/${demand.id}-${slug}`
+        await createWorktree(project.repoPath, worktreePath, branchName, project.defaultBranch)
+        await prisma.demand.update({
+          where: { id: demandId },
+          data: { branchName },
+        })
+      }
+      // NOTE: For rejection re-entry with worktree, the worktree should already exist.
+      // If it doesn't (e.g., cleaned up), recreate it.
+      effectiveRepoPath = worktreePath
+      usingWorktree = true
+    } else {
+      // Single-dev mode: use standard branch management on main repo
+      if (!branchName) {
+        // First run: create isolated branch
+        const slug = demand.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .slice(0, 50)
+        branchName = `demand/${demand.id}-${slug}`
+        await createIsolatedBranch(project.repoPath, branchName, project.defaultBranch)
+        await prisma.demand.update({
+          where: { id: demandId },
+          data: { branchName },
+        })
+      } else {
+        // Rejection re-entry: checkout existing branch
+        const git = createGitClient(project.repoPath)
+        await git.checkout(branchName)
+      }
+    }
+
+    try {
+      // 3. Invoke development agent
+      const agentResult = await runDevelopmentAgent({
+        demandId,
+        tenantId,
+        projectId,
+        timeout: PHASE_TIMEOUTS[phase]!,
+        rejectionFeedback: (demand.testingFeedback as unknown) ?? undefined,
+      })
+
+      // Update AgentRun to completed
+      await prisma.agentRun.update({
+        where: { id: agentRun.id },
+        data: {
+          status: "completed",
+          output: agentResult.output as any,
+          tokensIn: agentResult.tokensIn,
+          tokensOut: agentResult.tokensOut,
+          costUsd: agentResult.costUsd,
+          durationMs: agentResult.durationMs,
+        },
+      })
+
+      // Accumulate token/cost totals
+      await prisma.demand.update({
+        where: { id: demandId },
+        data: {
+          totalTokens: {
+            increment: agentResult.tokensIn + agentResult.tokensOut,
+          },
+          totalCostUsd: { increment: agentResult.costUsd },
+        },
+      })
+
+      // 4. Commit and push (use effectiveRepoPath for worktree support)
+      const commitMessage =
+        agentResult.output?.commitMessage ??
+        `feat(demand/${demand.id}): ${demand.title}`
+      await commitAndPush(effectiveRepoPath, branchName, commitMessage)
+
+      // 5. PR management
+      const prUrl = demand.prUrl as string | null
+      if (!prUrl) {
+        // First run: create PR
+        const newPrUrl = await createPullRequest({
+          repoUrl: project.repoUrl,
+          title: `[Demand ${demand.id}] ${demand.title}`,
+          body: buildPrBody(demand, agentResult.output),
+          head: branchName,
+          base: project.defaultBranch,
+        })
+        await prisma.demand.update({
+          where: { id: demandId },
+          data: { prUrl: newPrUrl },
+        })
+      }
+      // If prUrl exists, the push already updates the existing PR
+
+      // 6. Advance to testing
+      await prisma.demand.update({
+        where: { id: demandId },
+        data: { stage: "testing", agentStatus: "queued" },
+      })
+      const { agentQueue } = await import("./agent.queue.js")
+      await agentQueue.add("run-agent", {
+        demandId,
+        tenantId,
+        projectId,
+        phase: "testing",
+      })
+
+      // NOTE: Worktree is NOT cleaned up here -- it persists through testing phase
+      // and is cleaned up by the merge worker after merge completes
+
+      console.log(
+        `[agent-worker] Development completed: demandId=${demandId}, branch=${branchName}`
+      )
+    } catch (error: unknown) {
+      // Error handling: clean up dirty files on development failure
+      await resetWorkingDir(effectiveRepoPath)
+      throw error
+    }
+  } finally {
+    await releaseDevSlot(redis, projectId, demandId)
+    console.log(`[agent-worker] Dev slot released: project=${projectId}, demand=${demandId}`)
   }
 }
 
