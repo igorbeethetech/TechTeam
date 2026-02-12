@@ -47,11 +47,11 @@ Plans:
   2. User can create a demand with title, description, and priority, linked to a project
   3. Demand cards show title, priority, agent status, and accumulated cost -- and can be dragged between columns
   4. Board refreshes automatically every 5 seconds via polling without manual reload
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: Kanban board layout with 7 columns, demand cards, and drag-and-drop
-- [ ] 02-02: Demand creation form, project linking, and demand detail page with progress bar
+- [ ] 02-01-PLAN.md — Demand model, API, tenant isolation, and Kanban board with drag-and-drop + polling
+- [ ] 02-02-PLAN.md — Demand creation form, project linking, and demand detail page with progress bar
 
 ### Phase 3: Agent Pipeline
 **Goal**: Demands move automatically through Discovery and Planning phases via AI agents, with full execution visibility
