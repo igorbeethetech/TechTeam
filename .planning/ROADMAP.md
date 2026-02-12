@@ -96,12 +96,12 @@ Plans:
   3. User can resolve conflicts externally and signal resolution in the dashboard to resume the pipeline
   4. Up to N demands (maxConcurrentDev per project) run in Development simultaneously; excess demands wait in queue
   5. Discovery and Planning phases run in parallel across demands without blocking each other
-**Plans**: TBD
+**Plans:** 3 plans across 2 waves
 
 Plans:
-- [ ] 05-01: Merge queue (FIFO ordering, auto-merge Step 1, test execution after merge)
-- [ ] 05-02: AI conflict resolution (Step 2) and human escalation (Step 3) with dashboard controls
-- [ ] 05-03: Concurrency control (BullMQ grouping by project, queue overflow, parallel Discovery/Planning)
+- [ ] 05-01-PLAN.md — Merge queue infrastructure, concurrency library, extended git/github utilities, auto-merge (Step 1), agent worker wiring
+- [ ] 05-02-PLAN.md — Merge-resolver AI agent (Step 2), human escalation (Step 3), merge retry/status API routes
+- [ ] 05-03-PLAN.md — Dev slot concurrency gating, worktree support, MergeStatusView dashboard component
 
 ### Phase 6: Metrics and Notifications
 **Goal**: Users have full visibility into platform costs, agent performance, and receive timely alerts for events requiring attention
