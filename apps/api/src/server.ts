@@ -3,6 +3,9 @@ import cors from "@fastify/cors"
 import cookie from "@fastify/cookie"
 import { config } from "./lib/config.js"
 import authRoutes from "./routes/auth.js"
+import authPlugin from "./plugins/auth.js"
+import tenantPlugin from "./plugins/tenant.js"
+import projectRoutes from "./routes/projects.js"
 
 const app = Fastify({ logger: true })
 
@@ -21,6 +24,13 @@ app.get("/health", async () => {
 
 // Auth routes (public -- Better Auth handles auth internally)
 await app.register(authRoutes)
+
+// Protected routes (require auth + tenant context)
+await app.register(async (protectedApp) => {
+  await protectedApp.register(authPlugin)   // validates session
+  await protectedApp.register(tenantPlugin) // scopes prisma to tenant
+  await protectedApp.register(projectRoutes, { prefix: "/api/projects" })
+})
 
 // Start server
 const port = config.API_PORT
