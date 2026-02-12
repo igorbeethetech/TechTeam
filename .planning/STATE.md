@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 3 In Progress - Agent Pipeline Infrastructure
+**Current focus:** Phase 4 In Progress - Dev/Testing Agents
 
 ## Current Position
 
-Phase: 3 of 6 (Agent Pipeline) -- COMPLETE
-Plan: 3 of 3 in current phase (all complete)
-Status: Phase Complete
-Last activity: 2026-02-12 -- Completed 03-02-PLAN.md (discovery and planning agents)
+Phase: 4 of 6 (Dev/Testing)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-12 -- Completed 04-01-PLAN.md (dev/testing infrastructure)
 
-Progress: [█████████░░░░░░░░░░░] 45%
+Progress: [█████████░░░░░░░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 13min
-- Total execution time: 1.7 hours
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [█████████░░░░░░░░░░░] 45%
 | 01-foundation | 3/3 | 70min | 23min |
 | 02-kanban-demands | 2/2 | 15min | 8min |
 | 03-agent-pipeline | 3/3 | 17min | 6min |
+| 04-dev-testing | 1/3 | 11min | 11min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (10min), 02-02 (5min), 03-01 (8min), 03-03 (3min), 03-02 (6min)
-- Trend: accelerating
+- Last 5 plans: 02-02 (5min), 03-01 (8min), 03-03 (3min), 03-02 (6min), 04-01 (11min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [03-02]: Pure agent function pattern -- agents read DB + call AI + return results; worker handles all side effects
 - [03-03]: refetchInterval uses callback form `(query) =>` to avoid circular variable reference when polling depends on fetched data
 - [03-03]: Type assertions (as DiscoveryOutput, as PlanningOutput) for JSON columns since Prisma stores them as unknown
+- [04-01]: Base agent tools/allowedTools dual usage -- SDK tools sets available tools, allowedTools auto-approves them; both needed for bypassPermissions mode
+- [04-01]: Development output safeParse fallback -- returns null instead of throwing when structured output fails; worker uses demand title as fallback commit message
+- [04-01]: CLAUDE_DEV_MODEL defaults to CLAUDE_MODEL via local variable -- allows higher-capability model for development without breaking existing config
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 03-02-PLAN.md (discovery and planning agents) -- Phase 3 complete
-Resume file: .planning/phases/03-agent-pipeline/03-02-SUMMARY.md
+Stopped at: Completed 04-01-PLAN.md (dev/testing infrastructure)
+Resume file: .planning/phases/04-dev-testing/04-01-SUMMARY.md
