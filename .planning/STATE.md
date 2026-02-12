@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Phase 4 In Progress - Dev/Testing Agents
+**Current focus:** Phase 5 In Progress - Merge/Concurrency
 
 ## Current Position
 
-Phase: 4 of 6 (Dev/Testing)
-Plan: 3 of 3 in current phase (all complete)
-Status: Phase Complete
-Last activity: 2026-02-12 -- Completed 04-02-PLAN.md (testing agent + worker handlers)
+Phase: 5 of 6 (Merge/Concurrency)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-12 -- Completed 05-01-PLAN.md (merge queue infrastructure + Step 1 auto-merge)
 
-Progress: [████████████░░░░░░░░] 65%
+Progress: [██████████████░░░░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 11min
-- Total execution time: 1.98 hours
+- Total plans completed: 12
+- Average duration: 10min
+- Total execution time: 2.05 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [████████████░░░░░░░░] 65%
 | 02-kanban-demands | 2/2 | 15min | 8min |
 | 03-agent-pipeline | 3/3 | 17min | 6min |
 | 04-dev-testing | 3/3 | 16min | 5min |
+| 05-merge-concurrency | 1/3 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3min), 03-02 (6min), 04-01 (11min), 04-03 (2min), 04-02 (3min)
+- Last 5 plans: 03-02 (6min), 04-01 (11min), 04-03 (2min), 04-02 (3min), 05-01 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -85,6 +86,10 @@ Recent decisions affecting current work:
 - [04-02]: Development/testing handlers extracted as separate async functions rather than inline in if/else chain -- keeps the main worker callback readable
 - [04-02]: Development handler returns early from worker callback with minimal result -- handler manages its own AgentRun/Demand updates internally
 - [04-02]: Testing agent uses strict parse (not safeParse) since review output is simpler than code generation output
+- [05-01]: Local git merge + push + PR close instead of GitHub API merge -- allows conflict resolution before pushing
+- [05-01]: Post-merge tests lenient for v1 -- testing agent already validated code before merge
+- [05-01]: Merge worker concurrency 1 globally -- simpler than per-project serialization, sufficient for v1 scale
+- [05-01]: Conflicts stub directly to needs_human -- Steps 2/3 deferred to Plan 02
 
 ### Pending Todos
 
@@ -99,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 04-02-PLAN.md (testing agent + worker handlers) -- Phase 4 complete
-Resume file: .planning/phases/04-dev-testing/04-02-SUMMARY.md
+Stopped at: Completed 05-01-PLAN.md (merge queue infrastructure + Step 1 auto-merge)
+Resume file: .planning/phases/05-merge-concurrency/05-01-SUMMARY.md
