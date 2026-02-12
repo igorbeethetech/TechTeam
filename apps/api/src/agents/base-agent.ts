@@ -3,9 +3,17 @@ import { config } from "../lib/config.js"
 
 export interface AgentExecutionParams {
   prompt: string
-  schema: Record<string, unknown>
+  schema?: Record<string, unknown>
   timeoutMs: number
   cwd?: string
+  /** Tool names to enable. Empty or undefined = no tools (discovery/planning). */
+  allowedTools?: string[]
+  /** Max agentic turns. Defaults to 5 (discovery/planning). Development uses 50. */
+  maxTurns?: number
+  /** Optional system prompt override. */
+  systemPrompt?: string
+  /** Optional model override. Defaults to config.CLAUDE_MODEL. */
+  model?: string
 }
 
 export interface AgentExecutionResult {
@@ -18,8 +26,11 @@ export interface AgentExecutionResult {
 
 /**
  * Reusable agent execution wrapper.
- * Invokes Claude via the Agent SDK with structured JSON output,
- * timeout support, and cost/token tracking.
+ * Invokes Claude via the Agent SDK with optional structured JSON output,
+ * tool-enabled execution, timeout support, and cost/token tracking.
+ *
+ * Discovery/Planning agents: no tools, low maxTurns, required schema.
+ * Development/Testing agents: file system tools, high maxTurns, optional schema.
  */
 export async function executeAgent(
   params: AgentExecutionParams
@@ -33,6 +44,9 @@ export async function executeAgent(
   const abortController = new AbortController()
   const timer = setTimeout(() => abortController.abort(), params.timeoutMs)
 
+  const hasTools =
+    params.allowedTools !== undefined && params.allowedTools.length > 0
+
   try {
     let result: SDKResultMessage | null = null
 
@@ -40,14 +54,17 @@ export async function executeAgent(
       prompt: params.prompt,
       options: {
         abortController,
-        model: config.CLAUDE_MODEL,
-        maxTurns: 5,
-        outputFormat: {
-          type: "json_schema",
-          schema: params.schema,
-        },
+        model: params.model ?? config.CLAUDE_MODEL,
+        maxTurns: params.maxTurns ?? 5,
+        outputFormat: params.schema
+          ? { type: "json_schema", schema: params.schema }
+          : undefined,
         cwd: params.cwd,
-        tools: [],
+        // When tools are needed, specify which built-in tools are available
+        // and auto-allow them. When no tools needed, disable all built-in tools.
+        tools: hasTools ? params.allowedTools : [],
+        allowedTools: hasTools ? params.allowedTools : undefined,
+        systemPrompt: params.systemPrompt,
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         persistSession: false,
