@@ -8,9 +8,9 @@ import type { MergeJobData, MergeJobResult } from "./merge.queue.js"
  * Processes merge jobs with concurrency 1 (FIFO, one merge at a time globally).
  *
  * Implements 3-step merge escalation:
- * - Step 1 (complete): Auto-merge via git merge + push + PR close
- * - Step 2 (stubbed): AI conflict resolution (Plan 02)
- * - Step 3 (stubbed): Escalate to human (direct fallthrough)
+ * - Step 1: Auto-merge via git merge + push + PR close
+ * - Step 2: AI conflict resolution via merge-resolver agent
+ * - Step 3: Escalate to human with conflict context
  */
 export function createMergeWorker() {
   const worker = new Worker<MergeJobData, MergeJobResult>(
@@ -79,13 +79,11 @@ async function processMergeJob(
 
   try {
     // ---- STEP 1: Auto-merge ----
-    const { mergeFromBranch, resetWorkingDir } = await import(
-      "../lib/git.js"
-    )
+    const { mergeFromBranch, resetWorkingDir, createGitClient, checkConflictMarkers } =
+      await import("../lib/git.js")
     const { closePullRequest, extractPrNumber } = await import(
       "../lib/github.js"
     )
-    const { createGitClient } = await import("../lib/git.js")
 
     const merge = await mergeFromBranch(
       project.repoPath,
@@ -134,7 +132,7 @@ async function processMergeJob(
       })
 
       console.log(
-        `[merge-worker] Merge successful: demandId=${demandId}, branch=${branchName}`
+        `[merge-worker] STEP 1 success: demandId=${demandId}, branch=${branchName}`
       )
 
       return { merged: true, mergeStatus: "merged" }
@@ -142,18 +140,161 @@ async function processMergeJob(
 
     // ---- Conflicts detected ----
     console.log(
-      `[merge-worker] Merge conflicts detected: demandId=${demandId}, files=${merge.conflictFiles.join(", ")}`
+      `[merge-worker] STEP 1 conflicts detected: demandId=${demandId}, files=${merge.conflictFiles.join(", ")}`
     )
 
-    // STEP 2 STUB: AI conflict resolution (Plan 02)
-    // For now, directly fall through to Step 3
+    // ---- STEP 2: AI Conflict Resolution ----
+    console.log(
+      `[merge-worker] STEP 2 starting AI conflict resolution: demandId=${demandId}`
+    )
 
-    // STEP 3 STUB: Escalate to human
+    // Update demand: conflict_resolving
+    await prisma.demand.update({
+      where: { id: demandId },
+      data: { mergeStatus: "conflict_resolving" },
+    })
+
+    // Reload demand to get current mergeAttempts
+    const currentDemand = await prisma.demand.findUniqueOrThrow({
+      where: { id: demandId },
+    })
+
+    // Create AgentRun record for merge-resolver
+    const agentRun = await prisma.agentRun.create({
+      data: {
+        tenantId,
+        demandId,
+        phase: "merge",
+        status: "running",
+        attempt: (currentDemand.mergeAttempts as number) || 1,
+      },
+    })
+
+    // Re-attempt the merge to leave conflict markers in the working directory
+    const git = createGitClient(project.repoPath)
+    await git.fetch("origin")
+    await git.checkout(project.defaultBranch)
+    await git.pull("origin", project.defaultBranch)
+    try {
+      await git.merge([branchName])
+    } catch {
+      // Expected -- merge will fail with conflicts
+    }
+
+    // Get conflicted files from the working directory
+    const status = await git.status()
+    const conflictedFiles = status.conflicted
+
+    if (conflictedFiles.length > 0) {
+      // Dynamic import merge-resolver agent
+      const { runMergeResolverAgent } = await import(
+        "../agents/merge-resolver.agent.js"
+      )
+
+      const agentResult = await runMergeResolverAgent({
+        demandId,
+        tenantId,
+        projectId,
+        repoPath: project.repoPath,
+        branchName,
+        defaultBranch: project.defaultBranch,
+        conflictFiles: conflictedFiles,
+        timeout: 10 * 60 * 1000, // 10 minute timeout
+      })
+
+      // Update AgentRun with result metrics
+      await prisma.agentRun.update({
+        where: { id: agentRun.id },
+        data: {
+          status: agentResult.resolved ? "completed" : "failed",
+          tokensIn: agentResult.tokensIn,
+          tokensOut: agentResult.tokensOut,
+          costUsd: agentResult.costUsd,
+          durationMs: agentResult.durationMs,
+          output: agentResult.output as any,
+        },
+      })
+
+      // Accumulate costs on demand (same pattern as other agents)
+      await prisma.demand.update({
+        where: { id: demandId },
+        data: {
+          totalTokens: {
+            increment: agentResult.tokensIn + agentResult.tokensOut,
+          },
+          totalCostUsd: { increment: agentResult.costUsd },
+        },
+      })
+
+      // Check resolution: verify no conflicts remain
+      const postStatus = await git.status()
+      const stillConflicted = postStatus.conflicted.length > 0
+
+      // Also check for lingering conflict markers in tracked files
+      const hasMarkers = await checkConflictMarkers(project.repoPath)
+
+      if (agentResult.resolved && !stillConflicted && !hasMarkers) {
+        // AI resolution succeeded -- commit, push, close PR
+        await git.commit(
+          `merge: AI-resolved conflicts for demand/${demandId}`
+        )
+        await git.push("origin", project.defaultBranch)
+
+        await closePullRequest({
+          repoUrl: project.repoUrl,
+          prNumber: extractPrNumber(prUrl),
+        })
+
+        // Update demand: merged, done
+        await prisma.demand.update({
+          where: { id: demandId },
+          data: {
+            mergeStatus: "merged",
+            stage: "done",
+            agentStatus: null,
+          },
+        })
+
+        console.log(
+          `[merge-worker] STEP 2 AI resolution succeeded: demandId=${demandId}`
+        )
+
+        return { merged: true, mergeStatus: "merged" }
+      }
+
+      // AI resolution failed -- clean up working directory
+      console.log(
+        `[merge-worker] STEP 2 AI resolution failed: demandId=${demandId}, stillConflicted=${stillConflicted}, hasMarkers=${hasMarkers}`
+      )
+      await git.merge(["--abort"]).catch(() => {})
+      await git.reset(["--hard", `origin/${project.defaultBranch}`])
+    } else {
+      // No conflicted files found after re-merge (edge case)
+      console.warn(
+        `[merge-worker] STEP 2 no conflicted files found after re-merge: demandId=${demandId}`
+      )
+      await prisma.agentRun.update({
+        where: { id: agentRun.id },
+        data: { status: "failed", output: { error: "No conflicted files found after re-merge" } as any },
+      })
+      await git.merge(["--abort"]).catch(() => {})
+      await git.reset(["--hard", `origin/${project.defaultBranch}`])
+    }
+
+    // ---- STEP 3: Escalate to Human ----
+    console.log(
+      `[merge-worker] STEP 3 escalating to human: demandId=${demandId}, conflicts in ${merge.conflictFiles.length} files`
+    )
+
     await prisma.demand.update({
       where: { id: demandId },
       data: {
         mergeStatus: "needs_human",
-        mergeConflicts: { files: merge.conflictFiles } as any,
+        mergeConflicts: {
+          files: merge.conflictFiles,
+          attemptedAI: true,
+          mergeAttempts: (currentDemand.mergeAttempts as number) || 1,
+        } as any,
         agentStatus: null,
       },
     })
@@ -161,7 +302,7 @@ async function processMergeJob(
     return {
       merged: false,
       mergeStatus: "needs_human",
-      error: "Merge conflicts detected",
+      error: "Merge conflicts detected -- AI resolution failed, escalated to human",
     }
   } catch (error: unknown) {
     const errorMessage =
