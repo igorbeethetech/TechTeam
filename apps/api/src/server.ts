@@ -2,6 +2,7 @@ import Fastify from "fastify"
 import cors from "@fastify/cors"
 import cookie from "@fastify/cookie"
 import { config } from "./lib/config.js"
+import authRoutes from "./routes/auth.js"
 
 const app = Fastify({ logger: true })
 
@@ -17,6 +18,9 @@ await app.register(cookie)
 app.get("/health", async () => {
   return { status: "ok", timestamp: new Date().toISOString() }
 })
+
+// Auth routes (public -- Better Auth handles auth internally)
+await app.register(authRoutes)
 
 // Start server
 const port = config.API_PORT
