@@ -155,6 +155,12 @@ Plans:
   3. WebSocket connections are tenant-isolated -- a user in Tenant A never receives events from Tenant B
   4. If the WebSocket connection drops (network issue, server restart), the frontend automatically reconnects and falls back to polling until reconnection succeeds
   5. No polling timers remain active on pages that have an active WebSocket connection (polling is fully replaced, not layered on top)
+**Plans:** 3 plans across 2 waves
+
+Plans:
+- [ ] 08-01-PLAN.md -- Shared WS event types, Redis PubSub connections, @fastify/websocket plugin, authenticated /ws route with tenant-scoped connection map and heartbeat
+- [ ] 08-02-PLAN.md -- Worker event emission: publishWsEvent calls in agent.worker.ts and merge.worker.ts after every state mutation
+- [ ] 08-03-PLAN.md -- Frontend useWebSocket hook with reconnection/invalidation, WebSocketProvider, replace polling with conditional refetchInterval in all components
 
 ### Phase 9: Claude MAX Integration
 **Goal**: Users with a Claude MAX subscription can run agents using their subscription instead of paying per-API-call, configured via a simple toggle in Settings
@@ -202,7 +208,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 5. Merge and Concurrency | 3/3 | Complete | 2026-02-12 |
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
 | 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
-| 8. WebSocket Real-Time | 0/? | Pending | -- |
+| 8. WebSocket Real-Time | 0/3 | Pending | -- |
 | 9. Claude MAX Integration | 0/? | Pending | -- |
 | 10. Docker Production Deploy | 0/? | Pending | -- |
 | 11. Pipeline E2E Validation | 0/? | Pending | -- |
