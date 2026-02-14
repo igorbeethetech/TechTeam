@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### v1.1 -- UX Improvements and Production Readiness (Active)
 
 - [x] **Phase 7: Sidebar Navigation and Boards** - Collapsible sidebar, dedicated Boards page, and clickable demand cards
-- [ ] **Phase 8: WebSocket Real-Time** - Replace polling with WebSocket event-based cache invalidation via Redis PubSub
+- [x] **Phase 8: WebSocket Real-Time** - Replace polling with WebSocket event-based cache invalidation via Redis PubSub
 - [ ] **Phase 9: Claude MAX Integration** - Feature-flagged CLI subprocess executor as alternative to Anthropic API key
 - [ ] **Phase 10: Docker Production Deploy** - Multi-stage Dockerfiles, production compose, and single-command VPS deployment
 - [ ] **Phase 11: Pipeline E2E Validation** - Full pipeline test from Inbox through Done on a real repository
@@ -158,9 +158,9 @@ Plans:
 **Plans:** 3 plans across 2 waves
 
 Plans:
-- [ ] 08-01-PLAN.md -- Shared WS event types, Redis PubSub connections, @fastify/websocket plugin, authenticated /ws route with tenant-scoped connection map and heartbeat
-- [ ] 08-02-PLAN.md -- Worker event emission: publishWsEvent calls in agent.worker.ts and merge.worker.ts after every state mutation
-- [ ] 08-03-PLAN.md -- Frontend useWebSocket hook with reconnection/invalidation, WebSocketProvider, replace polling with conditional refetchInterval in all components
+- [x] 08-01-PLAN.md -- Shared WS event types, Redis PubSub connections, @fastify/websocket plugin, authenticated /ws route with tenant-scoped connection map and heartbeat
+- [x] 08-02-PLAN.md -- Worker event emission: publishWsEvent calls in agent.worker.ts and merge.worker.ts after every state mutation
+- [x] 08-03-PLAN.md -- Frontend useWebSocket hook with reconnection/invalidation, WebSocketProvider, replace polling with conditional refetchInterval in all components
 
 ### Phase 9: Claude MAX Integration
 **Goal**: Users with a Claude MAX subscription can run agents using their subscription instead of paying per-API-call, configured via a simple toggle in Settings
@@ -208,7 +208,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 5. Merge and Concurrency | 3/3 | Complete | 2026-02-12 |
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
 | 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
-| 8. WebSocket Real-Time | 0/3 | Pending | -- |
+| 8. WebSocket Real-Time | 3/3 | Complete | 2026-02-14 |
 | 9. Claude MAX Integration | 0/? | Pending | -- |
 | 10. Docker Production Deploy | 0/? | Pending | -- |
 | 11. Pipeline E2E Validation | 0/? | Pending | -- |

@@ -68,14 +68,14 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 
 ### WebSocket Real-Time
 
-- [ ] **WS-01**: API server establishes WebSocket connections with authenticated clients via @fastify/websocket
-- [ ] **WS-02**: WebSocket connections are scoped to the user's tenant (tenant isolation on WS channels)
-- [ ] **WS-03**: Worker events (agent status change, demand update, notification) are published via Redis PubSub to the API server
-- [ ] **WS-04**: API server broadcasts relevant events to connected WebSocket clients in the same tenant
-- [ ] **WS-05**: Frontend receives WebSocket events and triggers TanStack Query cache invalidation (not full data push)
-- [ ] **WS-06**: Kanban board updates in real-time via WebSocket without polling
-- [ ] **WS-07**: Demand detail page updates agent status and runs in real-time via WebSocket
-- [ ] **WS-08**: Frontend falls back to polling if WebSocket connection drops, with automatic reconnection
+- [x] **WS-01**: API server establishes WebSocket connections with authenticated clients via @fastify/websocket
+- [x] **WS-02**: WebSocket connections are scoped to the user's tenant (tenant isolation on WS channels)
+- [x] **WS-03**: Worker events (agent status change, demand update, notification) are published via Redis PubSub to the API server
+- [x] **WS-04**: API server broadcasts relevant events to connected WebSocket clients in the same tenant
+- [x] **WS-05**: Frontend receives WebSocket events and triggers TanStack Query cache invalidation (not full data push)
+- [x] **WS-06**: Kanban board updates in real-time via WebSocket without polling
+- [x] **WS-07**: Demand detail page updates agent status and runs in real-time via WebSocket
+- [x] **WS-08**: Frontend falls back to polling if WebSocket connection drops, with automatic reconnection
 
 ### Claude MAX Integration
 
@@ -174,14 +174,14 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 | NAV-05 | Phase 7 | Complete |
 | NAV-06 | Phase 7 | Complete |
 | NAV-07 | Phase 7 | Complete |
-| WS-01 | Phase 8 | Pending |
-| WS-02 | Phase 8 | Pending |
-| WS-03 | Phase 8 | Pending |
-| WS-04 | Phase 8 | Pending |
-| WS-05 | Phase 8 | Pending |
-| WS-06 | Phase 8 | Pending |
-| WS-07 | Phase 8 | Pending |
-| WS-08 | Phase 8 | Pending |
+| WS-01 | Phase 8 | Complete |
+| WS-02 | Phase 8 | Complete |
+| WS-03 | Phase 8 | Complete |
+| WS-04 | Phase 8 | Complete |
+| WS-05 | Phase 8 | Complete |
+| WS-06 | Phase 8 | Complete |
+| WS-07 | Phase 8 | Complete |
+| WS-08 | Phase 8 | Complete |
 | CMAX-01 | Phase 9 | Pending |
 | CMAX-02 | Phase 9 | Pending |
 | CMAX-03 | Phase 9 | Pending |
