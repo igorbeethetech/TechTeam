@@ -48,3 +48,5 @@ export {
   type PriorityLevel,
   STAGE_LABELS,
 } from "./constants/index"
+
+export { type WsEventType, type WsEvent } from "./types/ws-events"

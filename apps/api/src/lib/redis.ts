@@ -15,3 +15,22 @@ export function createWorkerConnection() {
     maxRetriesPerRequest: null,
   })
 }
+
+// ---- Redis PubSub connections ----
+// WHY separate connections? Redis PubSub has a fundamental restriction:
+// once a connection enters subscriber mode (via SUBSCRIBE), it can ONLY
+// run subscriber commands (SUBSCRIBE, UNSUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, PING).
+// All other commands (GET, SET, PUBLISH, etc.) are rejected with:
+// "Connection in subscriber mode, only subscriber commands may be used."
+// Therefore we need dedicated connections for subscriber and publisher roles,
+// separate from the BullMQ queue/worker connections.
+
+// For PubSub subscriber -- enters subscriber mode, cannot run normal commands
+export function createSubscriberConnection() {
+  return new IORedis(config.REDIS_URL)
+}
+
+// For PubSub publisher -- stays in normal mode, used only for PUBLISH commands
+export function createPublisherConnection() {
+  return new IORedis(config.REDIS_URL)
+}
