@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 8 - WebSocket Real-time
-Plan: 1 of 3 complete
-Status: Executing phase 08 -- plan 01 delivered
-Last activity: 2026-02-14 -- Plan 08-01 completed (WebSocket server infrastructure)
+Plan: 2 of 3 complete
+Status: Executing phase 08 -- plan 02 delivered
+Last activity: 2026-02-14 -- Plan 08-02 completed (worker event emission)
 
 Progress: [########██████████████████████] 64% (7/11 phases complete)
 
@@ -42,7 +42,7 @@ v1.1: [██████░░░░░░░░░░░░░░░░░░�
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
-| 08-websocket-realtime | 1/3 | 3min | 3min |
+| 08-websocket-realtime | 2/3 | 8min | 4min |
 | 09-claude-max | — | — | — |
 | 10-docker-deploy | — | — | — |
 | 11-pipeline-e2e | — | — | — |
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [08-01]: Lazy Redis subscriber creation -- only creates connection when first WebSocket client connects
 - [08-01]: Dynamic channel subscription per tenant -- subscribes/unsubscribes based on active client count
 - [08-01]: WebSocket route inside protected scope -- auth and tenant hooks fire on HTTP upgrade request
+- [08-02]: emitEvent double-safety wrapper -- publishWsEvent internal catch + emitEvent outer catch ensures worker never crashes on event publish failure
+- [08-02]: Events published AFTER Prisma resolves -- prevents race condition where frontend refetches stale data before DB commit
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 08-01-PLAN.md (WebSocket server infrastructure)
-Resume file: .planning/phases/08-websocket-realtime/08-01-SUMMARY.md
-Next action: Execute 08-02-PLAN.md (frontend useWebSocket hook and event-based invalidation)
+Stopped at: Completed 08-02-PLAN.md (worker event emission)
+Resume file: .planning/phases/08-websocket-realtime/08-02-SUMMARY.md
+Next action: Execute 08-03-PLAN.md (frontend useWebSocket hook and event-based invalidation)
