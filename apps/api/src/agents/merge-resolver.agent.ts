@@ -1,5 +1,5 @@
 import { zodToJsonSchema } from "zod-to-json-schema"
-import { executeAgent } from "./base-agent.js"
+import { executeAgentAuto } from "./agent-router.js"
 import { mergeResolverOutputSchema } from "@techteam/shared"
 import { config } from "../lib/config.js"
 
@@ -35,6 +35,7 @@ export async function runMergeResolverAgent(
   params: MergeResolverParams
 ): Promise<MergeResolverResult> {
   const {
+    tenantId,
     repoPath,
     branchName,
     defaultBranch,
@@ -65,7 +66,7 @@ export async function runMergeResolverAgent(
   const jsonSchema = zodToJsonSchema(mergeResolverOutputSchema)
 
   // Call the AI agent with file system tools
-  const result = await executeAgent({
+  const result = await executeAgentAuto(tenantId, {
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,

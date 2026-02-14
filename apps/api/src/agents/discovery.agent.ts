@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { zodToJsonSchema } from "zod-to-json-schema"
-import { executeAgent } from "./base-agent.js"
+import { executeAgentAuto } from "./agent-router.js"
 import { discoveryOutputSchema } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 
@@ -82,7 +82,7 @@ export interface DiscoveryAgentResult {
 export async function runDiscoveryAgent(
   params: DiscoveryAgentParams
 ): Promise<DiscoveryAgentResult> {
-  const { demandId, projectId, timeout } = params
+  const { demandId, tenantId, projectId, timeout } = params
 
   // Fetch demand and project for context (raw prisma -- no tenant scope needed for reads)
   const demand = await prisma.demand.findUniqueOrThrow({
@@ -101,7 +101,7 @@ export async function runDiscoveryAgent(
   const jsonSchema = zodToJsonSchema(discoveryOutputSchema)
 
   // Call the AI agent
-  const result = await executeAgent({
+  const result = await executeAgentAuto(tenantId, {
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,

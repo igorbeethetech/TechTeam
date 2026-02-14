@@ -1,5 +1,5 @@
 import { zodToJsonSchema } from "zod-to-json-schema"
-import { executeAgent } from "./base-agent.js"
+import { executeAgentAuto } from "./agent-router.js"
 import { planningOutputSchema } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 
@@ -81,7 +81,7 @@ export interface PlanningAgentResult {
 export async function runPlanningAgent(
   params: PlanningAgentParams
 ): Promise<PlanningAgentResult> {
-  const { demandId, projectId, timeout } = params
+  const { demandId, tenantId, projectId, timeout } = params
 
   // Fetch demand (raw prisma -- no tenant scope needed for reads)
   const demand = await prisma.demand.findUniqueOrThrow({
@@ -110,7 +110,7 @@ export async function runPlanningAgent(
   const jsonSchema = zodToJsonSchema(planningOutputSchema)
 
   // Call the AI agent
-  const result = await executeAgent({
+  const result = await executeAgentAuto(tenantId, {
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,

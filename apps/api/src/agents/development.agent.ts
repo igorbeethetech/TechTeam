@@ -1,5 +1,5 @@
 import { zodToJsonSchema } from "zod-to-json-schema"
-import { executeAgent } from "./base-agent.js"
+import { executeAgentAuto } from "./agent-router.js"
 import { developmentOutputSchema, type DevelopmentOutput } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 import { config } from "../lib/config.js"
@@ -121,7 +121,7 @@ export interface DevelopmentAgentResult {
 export async function runDevelopmentAgent(
   params: DevelopmentAgentParams
 ): Promise<DevelopmentAgentResult> {
-  const { demandId, projectId, timeout, rejectionFeedback } = params
+  const { demandId, tenantId, projectId, timeout, rejectionFeedback } = params
 
   // Fetch demand (raw prisma -- no tenant scope needed for reads)
   const demand = await prisma.demand.findUniqueOrThrow({
@@ -162,7 +162,7 @@ export async function runDevelopmentAgent(
   const jsonSchema = zodToJsonSchema(developmentOutputSchema)
 
   // Call the AI agent with file system tools and higher turn limit
-  const result = await executeAgent({
+  const result = await executeAgentAuto(tenantId, {
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,
