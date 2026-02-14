@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 7: Sidebar Navigation and Boards** - Collapsible sidebar, dedicated Boards page, and clickable demand cards
 - [x] **Phase 8: WebSocket Real-Time** - Replace polling with WebSocket event-based cache invalidation via Redis PubSub
-- [ ] **Phase 9: Claude MAX Integration** - Feature-flagged CLI subprocess executor as alternative to Anthropic API key
+- [x] **Phase 9: Claude MAX Integration** - Feature-flagged CLI subprocess executor as alternative to Anthropic API key
 - [ ] **Phase 10: Docker Production Deploy** - Multi-stage Dockerfiles, production compose, and single-command VPS deployment
 - [ ] **Phase 11: Pipeline E2E Validation** - Full pipeline test from Inbox through Done on a real repository
 
@@ -174,8 +174,8 @@ Plans:
 **Plans:** 2 plans across 2 waves
 
 Plans:
-- [ ] 09-01-PLAN.md -- Prisma AgentExecutionMode enum + TenantSettings field, CLI executor (base-agent-cli.ts), agent router (agent-router.ts)
-- [ ] 09-02-PLAN.md -- Wire all 5 agents through router, Settings API agentExecutionMode support, Settings page execution mode toggle
+- [x] 09-01-PLAN.md -- Prisma AgentExecutionMode enum + TenantSettings field, CLI executor (base-agent-cli.ts), agent router (agent-router.ts)
+- [x] 09-02-PLAN.md -- Wire all 5 agents through router, Settings API agentExecutionMode support, Settings page execution mode toggle
 
 ### Phase 10: Docker Production Deploy
 **Goal**: The entire platform can be deployed to a VPS with a single `docker compose up -d` command, with all services containerized and production-ready
@@ -214,6 +214,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
 | 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
 | 8. WebSocket Real-Time | 3/3 | Complete | 2026-02-14 |
-| 9. Claude MAX Integration | 0/2 | Pending | -- |
+| 9. Claude MAX Integration | 2/2 | Complete | 2026-02-14 |
 | 10. Docker Production Deploy | 0/? | Pending | -- |
 | 11. Pipeline E2E Validation | 0/? | Pending | -- |

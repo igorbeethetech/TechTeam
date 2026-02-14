@@ -79,11 +79,11 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 
 ### Claude MAX Integration
 
-- [ ] **CMAX-01**: Settings page shows toggle to choose between "API Key" mode and "Claude MAX" mode for agent execution
-- [ ] **CMAX-02**: In Claude MAX mode, agent worker spawns `claude -p` CLI subprocess instead of using the SDK
-- [ ] **CMAX-03**: CLI subprocess output is parsed to extract structured JSON matching the same schemas as SDK output
-- [ ] **CMAX-04**: Agent execution mode (SDK vs CLI) is configurable per tenant via TenantSettings
-- [ ] **CMAX-05**: Failed CLI subprocess invocations produce clear error messages and retry via the same BullMQ retry logic
+- [x] **CMAX-01**: Settings page shows toggle to choose between "API Key" mode and "Claude MAX" mode for agent execution
+- [x] **CMAX-02**: In Claude MAX mode, agent worker spawns `claude -p` CLI subprocess instead of using the SDK
+- [x] **CMAX-03**: CLI subprocess output is parsed to extract structured JSON matching the same schemas as SDK output
+- [x] **CMAX-04**: Agent execution mode (SDK vs CLI) is configurable per tenant via TenantSettings
+- [x] **CMAX-05**: Failed CLI subprocess invocations produce clear error messages and retry via the same BullMQ retry logic
 
 ### Docker and Production Deploy
 
@@ -182,11 +182,11 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 | WS-06 | Phase 8 | Complete |
 | WS-07 | Phase 8 | Complete |
 | WS-08 | Phase 8 | Complete |
-| CMAX-01 | Phase 9 | Pending |
-| CMAX-02 | Phase 9 | Pending |
-| CMAX-03 | Phase 9 | Pending |
-| CMAX-04 | Phase 9 | Pending |
-| CMAX-05 | Phase 9 | Pending |
+| CMAX-01 | Phase 9 | Complete |
+| CMAX-02 | Phase 9 | Complete |
+| CMAX-03 | Phase 9 | Complete |
+| CMAX-04 | Phase 9 | Complete |
+| CMAX-05 | Phase 9 | Complete |
 | DEPLOY-01 | Phase 10 | Pending |
 | DEPLOY-02 | Phase 10 | Pending |
 | DEPLOY-03 | Phase 10 | Pending |
