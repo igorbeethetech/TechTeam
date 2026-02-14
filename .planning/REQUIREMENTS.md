@@ -58,13 +58,13 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 
 ### Navigation and UX
 
-- [ ] **NAV-01**: User sees a collapsible sidebar with navigation links (Dashboard, Boards, Projects, Metrics, Settings) replacing the current top header nav
-- [ ] **NAV-02**: Sidebar shows project list with direct links to each project's board
-- [ ] **NAV-03**: Sidebar collapses to icon-only mode and persists collapse state across page navigations
-- [ ] **NAV-04**: User can access a dedicated "Boards" page that lists all projects with board access
-- [ ] **NAV-05**: On the Boards page, user can select a project and navigate to its Kanban board
-- [ ] **NAV-06**: Demand card text on the Kanban board is clickable to navigate to demand detail page
-- [ ] **NAV-07**: Clicking demand card text navigates to detail while drag-and-drop still works via separate drag handle
+- [x] **NAV-01**: User sees a collapsible sidebar with navigation links (Dashboard, Boards, Projects, Metrics, Settings) replacing the current top header nav
+- [x] **NAV-02**: Sidebar shows project list with direct links to each project's board
+- [x] **NAV-03**: Sidebar collapses to icon-only mode and persists collapse state across page navigations
+- [x] **NAV-04**: User can access a dedicated "Boards" page that lists all projects with board access
+- [x] **NAV-05**: On the Boards page, user can select a project and navigate to its Kanban board
+- [x] **NAV-06**: Demand card text on the Kanban board is clickable to navigate to demand detail page
+- [x] **NAV-07**: Clicking demand card text navigates to detail while drag-and-drop still works via separate drag handle
 
 ### WebSocket Real-Time
 
@@ -167,13 +167,13 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | Phase 7 | Pending |
-| NAV-02 | Phase 7 | Pending |
-| NAV-03 | Phase 7 | Pending |
-| NAV-04 | Phase 7 | Pending |
-| NAV-05 | Phase 7 | Pending |
-| NAV-06 | Phase 7 | Pending |
-| NAV-07 | Phase 7 | Pending |
+| NAV-01 | Phase 7 | Complete |
+| NAV-02 | Phase 7 | Complete |
+| NAV-03 | Phase 7 | Complete |
+| NAV-04 | Phase 7 | Complete |
+| NAV-05 | Phase 7 | Complete |
+| NAV-06 | Phase 7 | Complete |
+| NAV-07 | Phase 7 | Complete |
 | WS-01 | Phase 8 | Pending |
 | WS-02 | Phase 8 | Pending |
 | WS-03 | Phase 8 | Pending |

@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v1.1 -- UX Improvements and Production Readiness (Active)
 
-- [ ] **Phase 7: Sidebar Navigation and Boards** - Collapsible sidebar, dedicated Boards page, and clickable demand cards
+- [x] **Phase 7: Sidebar Navigation and Boards** - Collapsible sidebar, dedicated Boards page, and clickable demand cards
 - [ ] **Phase 8: WebSocket Real-Time** - Replace polling with WebSocket event-based cache invalidation via Redis PubSub
 - [ ] **Phase 9: Claude MAX Integration** - Feature-flagged CLI subprocess executor as alternative to Anthropic API key
 - [ ] **Phase 10: Docker Production Deploy** - Multi-stage Dockerfiles, production compose, and single-command VPS deployment
@@ -142,8 +142,8 @@ Plans:
 **Plans:** 2 plans across 2 waves
 
 Plans:
-- [ ] 07-01-PLAN.md -- Install shadcn sidebar, create AppSidebar component, restructure dashboard layout to replace header nav
-- [ ] 07-02-PLAN.md -- Boards API endpoint with demand counts, Boards page UI, Kanban card drag handle refactor with click-to-navigate
+- [x] 07-01-PLAN.md -- Install shadcn sidebar, create AppSidebar component, restructure dashboard layout to replace header nav
+- [x] 07-02-PLAN.md -- Boards API endpoint with demand counts, Boards page UI, Kanban card drag handle refactor with click-to-navigate
 
 ### Phase 8: WebSocket Real-Time
 **Goal**: The platform updates in real-time without polling -- board changes, agent status, and notifications appear instantly via WebSocket
@@ -201,7 +201,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 4. Development and Testing | 3/3 | Complete | 2026-02-12 |
 | 5. Merge and Concurrency | 3/3 | Complete | 2026-02-12 |
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
-| 7. Sidebar Navigation and Boards | 0/2 | Planned | -- |
+| 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
 | 8. WebSocket Real-Time | 0/? | Pending | -- |
 | 9. Claude MAX Integration | 0/? | Pending | -- |
 | 10. Docker Production Deploy | 0/? | Pending | -- |
