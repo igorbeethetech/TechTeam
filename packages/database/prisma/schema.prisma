@@ -118,13 +118,19 @@ model invitation {
 
 // === TENANT SETTINGS ===
 
+enum AgentExecutionMode {
+  sdk // Default: use Anthropic SDK with API key
+  cli // Claude MAX: use claude -p CLI subprocess
+}
+
 model TenantSettings {
-  id              String   @id @default(cuid())
-  tenantId        String   @unique
-  githubToken     String?
-  anthropicApiKey String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String             @id @default(cuid())
+  tenantId           String             @unique
+  githubToken        String?
+  anthropicApiKey    String?
+  agentExecutionMode AgentExecutionMode @default(sdk)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@index([tenantId])
 }
