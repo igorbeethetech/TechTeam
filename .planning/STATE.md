@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Milestone v1.1 -- Phase 9: Claude MAX
+**Current focus:** Milestone v1.1 -- Phase 9 complete, next Phase 10: Docker Deploy
 
 ## Current Position
 
 Phase: 9 - Claude MAX
-Plan: 1 of 2 complete
-Status: Plan 09-01 complete -- CLI infrastructure delivered
-Last activity: 2026-02-14 -- Plan 09-01 completed (CLI executor + agent router)
+Plan: 2 of 2 complete
+Status: Phase 09 complete -- all agents routed through execution mode toggle
+Last activity: 2026-02-14 -- Plan 09-02 completed (agent wiring + settings toggle)
 
-Progress: [################██████████████] 73% (8/11 phases complete)
+Progress: [###################███████████] 82% (9/11 phases complete)
 
 v1.0: [██████████████████████████████] 100% (6/6 phases)
-v1.1: [████████████░░░░░░░░░░░░░░░░░░] 40% (2/5 phases complete)
+v1.1: [██████████████████░░░░░░░░░░░░] 60% (3/5 phases complete)
 
 ## Performance Metrics
 
@@ -43,7 +43,7 @@ v1.1: [████████████░░░░░░░░░░░░�
 |-------|-------|-------|----------|
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
 | 08-websocket-realtime | 3/3 | 11min | 4min |
-| 09-claude-max | 1/2 | 3min | 3min |
+| 09-claude-max | 2/2 | 8min | 4min |
 | 10-docker-deploy | — | — | — |
 | 11-pipeline-e2e | — | — | — |
 
@@ -85,6 +85,9 @@ Recent decisions affecting current work:
 - [09-01]: executeAgentAuto(tenantId, params) as single dispatch entry point -- agents change one import line
 - [09-01]: CLI mode returns tokensIn/tokensOut as 0 -- CLI does not expose token counts, costUsd from total_cost_usd
 - [09-01]: Default to sdk mode when no TenantSettings record exists -- preserves existing behavior
+- [09-02]: All 5 agents use executeAgentAuto(tenantId, params) as single dispatch entry point
+- [09-02]: Execution mode toggle saves immediately on radio change -- no separate Save button
+- [09-02]: RadioGroup created manually following project's radix-ui umbrella import pattern
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 09-01-PLAN.md (CLI executor + agent router)
-Resume file: .planning/phases/09-claude-max/09-01-SUMMARY.md
-Next action: Execute Plan 09-02 (agent wiring + settings toggle)
+Stopped at: Completed 09-02-PLAN.md (agent wiring + settings toggle)
+Resume file: .planning/phases/09-claude-max/09-02-SUMMARY.md
+Next action: Execute Phase 10 (Docker Deploy)
