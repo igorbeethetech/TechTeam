@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 
 ## Current Position
 
-Phase: 8 - WebSocket Real-time (COMPLETE)
-Plan: 3 of 3 complete
-Status: Phase 08 complete -- all 3 plans delivered
-Last activity: 2026-02-14 -- Plan 08-03 completed (frontend WebSocket client)
+Phase: 9 - Claude MAX
+Plan: 1 of 2 complete
+Status: Plan 09-01 complete -- CLI infrastructure delivered
+Last activity: 2026-02-14 -- Plan 09-01 completed (CLI executor + agent router)
 
 Progress: [################██████████████] 73% (8/11 phases complete)
 
@@ -43,7 +43,7 @@ v1.1: [████████████░░░░░░░░░░░░�
 |-------|-------|-------|----------|
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
 | 08-websocket-realtime | 3/3 | 11min | 4min |
-| 09-claude-max | — | — | — |
+| 09-claude-max | 1/2 | 3min | 3min |
 | 10-docker-deploy | — | — | — |
 | 11-pipeline-e2e | — | — | — |
 
@@ -81,6 +81,10 @@ Recent decisions affecting current work:
 - [08-03]: Single app-wide WebSocket connection via React context provider -- avoids multiple connections per component
 - [08-03]: EVENT_TO_QUERY_KEYS mapping converts server events to exact query key invalidations
 - [08-03]: Conditional polling pattern: wsStatus === "connected" ? false : originalInterval preserves fallback
+- [09-01]: Stdin piping for CLI prompts instead of -p arg -- avoids Windows ~32K command-line length limit
+- [09-01]: executeAgentAuto(tenantId, params) as single dispatch entry point -- agents change one import line
+- [09-01]: CLI mode returns tokensIn/tokensOut as 0 -- CLI does not expose token counts, costUsd from total_cost_usd
+- [09-01]: Default to sdk mode when no TenantSettings record exists -- preserves existing behavior
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 08-03-PLAN.md (frontend WebSocket client) -- Phase 08 complete
-Resume file: .planning/phases/08-websocket-realtime/08-03-SUMMARY.md
-Next action: Execute Phase 09 (Claude MAX integration)
+Stopped at: Completed 09-01-PLAN.md (CLI executor + agent router)
+Resume file: .planning/phases/09-claude-max/09-01-SUMMARY.md
+Next action: Execute Plan 09-02 (agent wiring + settings toggle)
