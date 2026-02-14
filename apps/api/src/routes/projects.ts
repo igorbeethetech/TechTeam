@@ -2,6 +2,42 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { projectCreateSchema, projectUpdateSchema } from "@techteam/shared"
 
 export default async function projectRoutes(fastify: FastifyInstance) {
+  // GET /boards - List active projects with demand counts per stage
+  fastify.get("/boards", async (request: FastifyRequest, reply: FastifyReply) => {
+    const projects = await request.prisma.project.findMany({
+      where: { status: "active" },
+      orderBy: { createdAt: "desc" },
+    })
+
+    if (projects.length === 0) {
+      return { projects: [] }
+    }
+
+    // Get demand counts grouped by projectId and stage in a single query
+    const demandCounts = await request.prisma.demand.groupBy({
+      by: ["projectId", "stage"],
+      _count: { id: true },
+      where: {
+        projectId: { in: projects.map((p) => p.id) },
+      },
+    })
+
+    // Build response: each project gets a demandCounts object { stage: count }
+    const projectBoards = projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      repoUrl: project.repoUrl,
+      createdAt: project.createdAt,
+      demandCounts: Object.fromEntries(
+        demandCounts
+          .filter((dc) => dc.projectId === project.id)
+          .map((dc) => [dc.stage, dc._count.id])
+      ),
+    }))
+
+    return { projects: projectBoards }
+  })
+
   // GET / - List active projects for the tenant
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     const projects = await request.prisma.project.findMany({
