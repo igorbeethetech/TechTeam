@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 
 ## Current Position
 
-Phase: 7 - Sidebar Navigation and Boards (COMPLETE)
-Plan: 2 of 2 complete
-Status: Phase 07 complete -- all plans delivered
-Last activity: 2026-02-14 -- Plan 07-02 completed (boards page and card interactions)
+Phase: 8 - WebSocket Real-time
+Plan: 1 of 3 complete
+Status: Executing phase 08 -- plan 01 delivered
+Last activity: 2026-02-14 -- Plan 08-01 completed (WebSocket server infrastructure)
 
 Progress: [########██████████████████████] 64% (7/11 phases complete)
 
@@ -42,7 +42,7 @@ v1.1: [██████░░░░░░░░░░░░░░░░░░�
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
-| 08-websocket-realtime | — | — | — |
+| 08-websocket-realtime | 1/3 | 3min | 3min |
 | 09-claude-max | — | — | — |
 | 10-docker-deploy | — | — | — |
 | 11-pipeline-e2e | — | — | — |
@@ -71,6 +71,10 @@ Recent decisions affecting current work:
 - [07-02]: router.push on card div instead of Link wrapper -- avoids nested interactive elements (button inside Link)
 - [07-02]: KanbanItemContext for drag handle delegation -- useKanbanItemHandle hook exports activator ref and listeners
 - [07-02]: TouchSensor 300ms delay alongside PointerSensor -- mobile long-press drag support
+- [08-01]: WeakMap for heartbeat isAlive tracking -- avoids polluting WebSocket instances with custom properties
+- [08-01]: Lazy Redis subscriber creation -- only creates connection when first WebSocket client connects
+- [08-01]: Dynamic channel subscription per tenant -- subscribes/unsubscribes based on active client count
+- [08-01]: WebSocket route inside protected scope -- auth and tenant hooks fire on HTTP upgrade request
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 07-02-PLAN.md (boards page and card interactions) -- Phase 07 complete
-Resume file: .planning/phases/07-sidebar-navigation/07-02-SUMMARY.md
-Next action: /gsd:execute-phase 08 (WebSocket real-time)
+Stopped at: Completed 08-01-PLAN.md (WebSocket server infrastructure)
+Resume file: .planning/phases/08-websocket-realtime/08-01-SUMMARY.md
+Next action: Execute 08-02-PLAN.md (frontend useWebSocket hook and event-based invalidation)
