@@ -171,6 +171,11 @@ Plans:
   2. In Claude MAX mode, agents execute successfully via `claude -p` CLI subprocess and produce the same structured output as SDK mode
   3. Agent execution mode is stored per tenant -- switching mode affects all agents for that tenant without code changes
   4. If CLI subprocess fails (spawn error, timeout, malformed output), the error is surfaced clearly in the agent run log and BullMQ retries using the same retry logic as SDK mode
+**Plans:** 2 plans across 2 waves
+
+Plans:
+- [ ] 09-01-PLAN.md -- Prisma AgentExecutionMode enum + TenantSettings field, CLI executor (base-agent-cli.ts), agent router (agent-router.ts)
+- [ ] 09-02-PLAN.md -- Wire all 5 agents through router, Settings API agentExecutionMode support, Settings page execution mode toggle
 
 ### Phase 10: Docker Production Deploy
 **Goal**: The entire platform can be deployed to a VPS with a single `docker compose up -d` command, with all services containerized and production-ready
@@ -209,6 +214,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
 | 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
 | 8. WebSocket Real-Time | 3/3 | Complete | 2026-02-14 |
-| 9. Claude MAX Integration | 0/? | Pending | -- |
+| 9. Claude MAX Integration | 0/2 | Pending | -- |
 | 10. Docker Production Deploy | 0/? | Pending | -- |
 | 11. Pipeline E2E Validation | 0/? | Pending | -- |
