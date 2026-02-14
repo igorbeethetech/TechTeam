@@ -13,6 +13,7 @@
     "@anthropic-ai/claude-agent-sdk": "^0.2.39",
     "@fastify/cookie": "^11.0.0",
     "@fastify/cors": "^11.0.0",
+    "@fastify/websocket": "^11.2.0",
     "@octokit/rest": "^22.0.1",
     "@techteam/database": "workspace:*",
     "@techteam/shared": "workspace:*",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
     "prisma": "^7.3.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"

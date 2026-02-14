@@ -5,6 +5,7 @@ import { config } from "./lib/config.js"
 import authRoutes from "./routes/auth.js"
 import authPlugin from "./plugins/auth.js"
 import tenantPlugin from "./plugins/tenant.js"
+import websocketPlugin from "./plugins/websocket.js"
 import projectRoutes from "./routes/projects.js"
 import demandRoutes from "./routes/demands.js"
 import agentRunRoutes from "./routes/agent-runs.js"
@@ -12,6 +13,7 @@ import mergeRoutes from "./routes/merge.js"
 import metricsRoutes from "./routes/metrics.js"
 import notificationRoutes from "./routes/notifications.js"
 import settingsRoutes from "./routes/settings.js"
+import wsRoutes from "./routes/ws.js"
 
 const app = Fastify({ logger: true })
 
@@ -23,6 +25,9 @@ await app.register(cors, {
 })
 
 await app.register(cookie)
+
+// WebSocket plugin (must be registered before WS routes)
+await app.register(websocketPlugin)
 
 // Health check endpoint
 app.get("/health", async () => {
@@ -43,6 +48,7 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(metricsRoutes, { prefix: "/api/metrics" })
   await protectedApp.register(notificationRoutes, { prefix: "/api/notifications" })
   await protectedApp.register(settingsRoutes, { prefix: "/api/settings" })
+  await protectedApp.register(wsRoutes)
 })
 
 // Start server
