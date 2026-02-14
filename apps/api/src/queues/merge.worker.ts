@@ -2,6 +2,14 @@ import { Worker, type Job } from "bullmq"
 import { createWorkerConnection } from "../lib/redis.js"
 import { forTenant } from "@techteam/database"
 import type { MergeJobData, MergeJobResult } from "./merge.queue.js"
+import { publishWsEvent } from "../lib/ws-events.js"
+import type { WsEvent } from "@techteam/shared"
+
+// Fire-and-forget wrapper: ensures publishWsEvent failures never block or crash the worker.
+// publishWsEvent already has try/catch internally, but this provides double safety.
+async function emitEvent(event: WsEvent): Promise<void> {
+  try { await publishWsEvent(event) } catch { /* never block worker */ }
+}
 
 /**
  * Creates and returns the BullMQ worker for the merge queue.
@@ -72,6 +80,7 @@ async function processMergeJob(
       agentStatus: "running",
     },
   })
+  await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
 
   console.log(
     `[merge-worker] Processing merge: demandId=${demandId}, branch=${branchName}`
@@ -131,6 +140,7 @@ async function processMergeJob(
           completedAt: new Date(),
         } as any,
       })
+      await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
 
       // NOTIF-03: Notify on demand completion
       try {
@@ -143,6 +153,7 @@ async function processMergeJob(
             projectId,
           },
         })
+        await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
       } catch (notifErr) {
         console.warn("[merge-worker] Failed to create done notification:", notifErr)
       }
@@ -169,6 +180,7 @@ async function processMergeJob(
       where: { id: demandId },
       data: { mergeStatus: "conflict_resolving" },
     })
+    await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
 
     // Reload demand to get current mergeAttempts
     const currentDemand = await prisma.demand.findUniqueOrThrow({
@@ -185,6 +197,7 @@ async function processMergeJob(
         attempt: (currentDemand.mergeAttempts as number) || 1,
       },
     })
+    await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
     // Re-attempt the merge to leave conflict markers in the working directory
     const git = createGitClient(project.repoPath)
@@ -230,6 +243,7 @@ async function processMergeJob(
           output: agentResult.output as any,
         },
       })
+      await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
       // Accumulate costs on demand (same pattern as other agents)
       await prisma.demand.update({
@@ -271,6 +285,7 @@ async function processMergeJob(
             completedAt: new Date(),
           } as any,
         })
+        await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
 
         // NOTIF-03: Notify on demand completion
         try {
@@ -283,6 +298,7 @@ async function processMergeJob(
               projectId,
             },
           })
+          await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
         } catch (notifErr) {
           console.warn("[merge-worker] Failed to create done notification:", notifErr)
         }
@@ -309,6 +325,7 @@ async function processMergeJob(
         where: { id: agentRun.id },
         data: { status: "failed", output: { error: "No conflicted files found after re-merge" } as any },
       })
+      await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
       await git.merge(["--abort"]).catch(() => {})
       await git.reset(["--hard", `origin/${project.defaultBranch}`])
     }
@@ -330,6 +347,7 @@ async function processMergeJob(
         agentStatus: null,
       },
     })
+    await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
 
     // NOTIF-02: Notify on merge escalation to human
     try {
@@ -342,6 +360,7 @@ async function processMergeJob(
           projectId,
         },
       })
+      await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
     } catch (notifErr) {
       console.warn("[merge-worker] Failed to create merge notification:", notifErr)
     }
@@ -367,6 +386,7 @@ async function processMergeJob(
         agentStatus: null,
       },
     })
+    await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
 
     // NOTIF-02: Notify on merge failure requiring human intervention
     try {
@@ -379,6 +399,7 @@ async function processMergeJob(
           projectId,
         },
       })
+      await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
     } catch (notifErr) {
       console.warn("[merge-worker] Failed to create merge notification:", notifErr)
     }
