@@ -10,14 +10,14 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 7 - Sidebar Navigation and Boards
-Plan: Not started (awaiting plan-phase)
-Status: Roadmap created, ready for planning
-Last activity: 2026-02-13 -- v1.1 roadmap created (phases 7-11)
+Plan: 1 of 2 complete -- executing plan 2 next
+Status: Plan 07-01 complete (sidebar layout)
+Last activity: 2026-02-14 -- Plan 07-01 completed (sidebar navigation layout)
 
 Progress: [######████████████████████████] 55% (6/11 phases complete)
 
 v1.0: [██████████████████████████████] 100% (6/6 phases)
-v1.1: [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0% (0/5 phases)
+v1.1: [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] 5% (0/5 phases, 1/2 plans in phase 7)
 
 ## Performance Metrics
 
@@ -41,7 +41,7 @@ v1.1: [░░░░░░░░░░░░░░░░░░░░░░░░�
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 07-sidebar-navigation | — | — | — |
+| 07-sidebar-navigation | 1/2 | 3min | 3min |
 | 08-websocket-realtime | — | — | — |
 | 09-claude-max | — | — | — |
 | 10-docker-deploy | — | — | — |
@@ -65,6 +65,9 @@ Recent decisions affecting current work:
 - [v1.1]: WebSocket uses event-based TanStack Query invalidation, not full data push
 - [v1.1]: Sidebar navigation first -- layout restructuring before wiring real-time events
 - [v1.1]: Docker deploy after all features -- containerize once code is stable
+- [07-01]: AppSidebar calls useSession() internally -- avoids prop drilling, session cached by auth client
+- [07-01]: collapsible="icon" mode for sidebar -- tooltip-on-hover, not expand-on-hover
+- [07-01]: Shared query key ["projects"] between sidebar and projects page -- auto-invalidation on mutations
 
 ### Pending Todos
 
@@ -79,7 +82,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: v1.1 roadmap created -- ready for Phase 7 planning
-Resume file: .planning/ROADMAP.md
-Next action: /gsd:plan-phase 7
+Last session: 2026-02-14
+Stopped at: Completed 07-01-PLAN.md (sidebar layout)
+Resume file: .planning/phases/07-sidebar-navigation/07-01-SUMMARY.md
+Next action: /gsd:execute-phase 07 (plan 02 -- boards page and card interactions)
