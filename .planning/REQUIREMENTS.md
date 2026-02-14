@@ -142,13 +142,13 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 | Multi-idioma (i18n) | Portugues como idioma principal |
 | Kubernetes/Swarm | Single VPS com Docker Compose suficiente para v1.1 |
 | Full WebSocket data push | Event-based invalidation preserva TanStack Query patterns |
-| Telegram bot (v1.1) | Deferred to v1.2 per user choice — WebSocket first |
+| Telegram bot (v1.1) | Deferred to v1.2 per user choice -- WebSocket first |
 | Multi-model (GPT-4, Gemini) | Claude-only simplifica prompts e custos |
 | Real-time collaboration | Single owner per demand, race conditions nao valem complexidade |
 
 ## Traceability
 
-### v1.0 (Phases 1-6) — Complete
+### v1.0 (Phases 1-6) -- Complete
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -163,7 +163,7 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 | MERGE-01..05, CONC-01..03 | Phase 5 | Complete |
 | METR-01..04, NOTIF-01..03 | Phase 6 | Complete |
 
-### v1.1 (Phases 7-11) — Active
+### v1.1 (Phases 7-11) -- Active
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -201,11 +201,11 @@ Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 | PIPE-05 | Phase 11 | Pending |
 
 **Coverage:**
-- v1.0 requirements: 68 total — 68 complete ✓
-- v1.1 requirements: 29 total
-- Mapped to phases: 29
-- Unmapped: 0 ✓
+- v1.0 requirements: 68 total -- 68 complete
+- v1.1 requirements: 32 total (NAV: 7, WS: 8, CMAX: 5, DEPLOY: 7, PIPE: 5)
+- Mapped to phases: 32
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-13 after v1.1 milestone definition*
+*Last updated: 2026-02-13 after v1.1 roadmap creation*
