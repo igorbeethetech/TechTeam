@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Milestone v1.1 -- Phase 8: WebSocket Real-time
+**Current focus:** Milestone v1.1 -- Phase 9: Claude MAX
 
 ## Current Position
 
-Phase: 8 - WebSocket Real-time
-Plan: 2 of 3 complete
-Status: Executing phase 08 -- plan 02 delivered
-Last activity: 2026-02-14 -- Plan 08-02 completed (worker event emission)
+Phase: 8 - WebSocket Real-time (COMPLETE)
+Plan: 3 of 3 complete
+Status: Phase 08 complete -- all 3 plans delivered
+Last activity: 2026-02-14 -- Plan 08-03 completed (frontend WebSocket client)
 
-Progress: [########██████████████████████] 64% (7/11 phases complete)
+Progress: [################██████████████] 73% (8/11 phases complete)
 
 v1.0: [██████████████████████████████] 100% (6/6 phases)
-v1.1: [██████░░░░░░░░░░░░░░░░░░░░░░░░] 20% (1/5 phases complete)
+v1.1: [████████████░░░░░░░░░░░░░░░░░░] 40% (2/5 phases complete)
 
 ## Performance Metrics
 
@@ -42,7 +42,7 @@ v1.1: [██████░░░░░░░░░░░░░░░░░░�
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
-| 08-websocket-realtime | 2/3 | 8min | 4min |
+| 08-websocket-realtime | 3/3 | 11min | 4min |
 | 09-claude-max | — | — | — |
 | 10-docker-deploy | — | — | — |
 | 11-pipeline-e2e | — | — | — |
@@ -77,6 +77,10 @@ Recent decisions affecting current work:
 - [08-01]: WebSocket route inside protected scope -- auth and tenant hooks fire on HTTP upgrade request
 - [08-02]: emitEvent double-safety wrapper -- publishWsEvent internal catch + emitEvent outer catch ensures worker never crashes on event publish failure
 - [08-02]: Events published AFTER Prisma resolves -- prevents race condition where frontend refetches stale data before DB commit
+- [08-03]: TSX extension for use-websocket.tsx -- WebSocketProvider returns JSX, requires TSX not TS
+- [08-03]: Single app-wide WebSocket connection via React context provider -- avoids multiple connections per component
+- [08-03]: EVENT_TO_QUERY_KEYS mapping converts server events to exact query key invalidations
+- [08-03]: Conditional polling pattern: wsStatus === "connected" ? false : originalInterval preserves fallback
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 08-02-PLAN.md (worker event emission)
-Resume file: .planning/phases/08-websocket-realtime/08-02-SUMMARY.md
-Next action: Execute 08-03-PLAN.md (frontend useWebSocket hook and event-based invalidation)
+Stopped at: Completed 08-03-PLAN.md (frontend WebSocket client) -- Phase 08 complete
+Resume file: .planning/phases/08-websocket-realtime/08-03-SUMMARY.md
+Next action: Execute Phase 09 (Claude MAX integration)
