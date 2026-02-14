@@ -3,240 +3,209 @@
 **Defined:** 2026-02-11
 **Core Value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
 
-## v1 Requirements
+## v1.0 Requirements (Complete)
 
-### Infrastructure
+All 68 requirements shipped and validated via UAT on 2026-02-13.
 
-- [ ] **INFRA-01**: Monorepo Turborepo com apps/web, apps/api, packages/shared funcional com pnpm workspaces
-- [ ] **INFRA-02**: Docker Compose sobe PostgreSQL 16 e Redis 7 com um comando
-- [ ] **INFRA-03**: Schema Prisma com migrations rodando contra PostgreSQL
-- [ ] **INFRA-04**: Tipos e validators Zod compartilhados entre frontend e backend via packages/shared
-- [ ] **INFRA-05**: Fastify backend com rotas REST respondendo JSON
+### Infrastructure (Phase 1) ✓
+- [x] **INFRA-01** through **INFRA-05**: Monorepo, Docker Compose, Prisma, shared types, Fastify API
 
-### Authentication
+### Authentication (Phase 1) ✓
+- [x] **AUTH-01** through **AUTH-04**: Register, login, logout, session persistence
 
-- [ ] **AUTH-01**: User pode criar conta com email e senha
-- [ ] **AUTH-02**: User pode fazer login e receber JWT com tenantId
-- [ ] **AUTH-03**: User pode fazer logout
-- [ ] **AUTH-04**: Sessao persiste entre refreshes do browser via token
+### Multi-Tenant (Phase 1) ✓
+- [x] **TENANT-01** through **TENANT-04**: tenantId isolation, auto-filtering, Bee The Tech seed
 
-### Multi-Tenant
+### Projects (Phase 1) ✓
+- [x] **PROJ-01** through **PROJ-05**: CRUD, repo config, concurrency settings, archive
 
-- [ ] **TENANT-01**: Cada registro no banco pertence a um tenant via tenantId
-- [ ] **TENANT-02**: Queries sao filtradas automaticamente por tenantId via Prisma middleware
-- [ ] **TENANT-03**: User so ve dados do seu proprio tenant
-- [ ] **TENANT-04**: Bee The Tech eh criado como tenant padrao no seed
+### Kanban Board (Phase 2) ✓
+- [x] **BOARD-01** through **BOARD-05**: 7 columns, drag-drop, polling, card content
 
-### Projects
+### Demands (Phases 2-3) ✓
+- [x] **DEM-01** through **DEM-06**: Create, project link, detail page, phase outputs, agent runs, metrics
 
-- [ ] **PROJ-01**: User pode criar projeto com nome, descricao, repo URL, repo path, e tech stack
-- [ ] **PROJ-02**: User pode listar todos os projetos do seu tenant
-- [ ] **PROJ-03**: User pode editar configuracoes de um projeto
-- [ ] **PROJ-04**: User pode configurar maxConcurrentDev (1-3) e mergeStrategy (fifo/priority) por projeto
-- [ ] **PROJ-05**: User pode arquivar um projeto
+### Agent Pipeline (Phase 3) ✓
+- [x] **AGENT-01** through **AGENT-07**: BullMQ queue, worker execution, retry, timeouts
 
-### Kanban Board
+### Discovery Agent (Phase 3) ✓
+- [x] **DISC-01** through **DISC-04**: Requirements extraction, complexity, ambiguity detection
 
-- [ ] **BOARD-01**: User ve board com 7 colunas (Inbox, Discovery, Planning, Development, Testing, Merge, Done)
-- [ ] **BOARD-02**: Cada coluna mostra cards das demandas naquele stage
-- [ ] **BOARD-03**: Cards mostram titulo, prioridade, status do agente, e custo acumulado
-- [ ] **BOARD-04**: User pode arrastar cards entre colunas via drag-and-drop
-- [ ] **BOARD-05**: Board atualiza automaticamente via polling a cada 5 segundos
+### Planning Agent (Phase 3) ✓
+- [x] **PLAN-01** through **PLAN-03**: Technical plan, task decomposition, file mapping
 
-### Demands
+### Development Agent (Phase 4) ✓
+- [x] **DEV-01** through **DEV-04**: Branch creation, code execution, atomic commits, PR creation
 
-- [ ] **DEM-01**: User pode criar demanda com titulo, descricao, e prioridade (low/medium/high/urgent)
-- [ ] **DEM-02**: User deve selecionar projeto ao criar demanda
-- [ ] **DEM-03**: User pode ver detalhe da demanda com progress bar de fases
-- [ ] **DEM-04**: Detalhe mostra output de cada fase (requirements do Discovery, plan do Planning)
-- [ ] **DEM-05**: Detalhe mostra lista de Agent Runs com tokens, custo e duracao
-- [ ] **DEM-06**: Demanda acumula totalTokens e totalCostUsd de todos os Agent Runs
+### Testing Agent (Phase 4) ✓
+- [x] **TEST-01** through **TEST-05**: PR review, test execution, approval/rejection, feedback loop
 
-### Agent Pipeline
+### Merge (Phase 5) ✓
+- [x] **MERGE-01** through **MERGE-05**: FIFO queue, auto-merge, AI resolve, human escalation
 
-- [ ] **AGENT-01**: Quando demanda entra em Discovery, um job eh enfileirado no BullMQ
-- [ ] **AGENT-02**: Worker executa Claude CLI headless (`claude -p`) com prompt contextualizado
-- [ ] **AGENT-03**: Output do agente eh parseado e salvo no banco (requirements JSON, plan JSON)
-- [ ] **AGENT-04**: Cada execucao gera um AgentRun com tokensIn, tokensOut, costUsd, durationMs
-- [ ] **AGENT-05**: Ao concluir uma fase, demanda avanca automaticamente para a proxima
-- [ ] **AGENT-06**: Se agente falhar, job eh retentado ate 3 vezes com backoff exponencial
-- [ ] **AGENT-07**: Timeouts por fase: Discovery 2min, Planning 5min, Development 30min, Testing 10min, Merge 10min
+### Concurrency (Phases 4-5) ✓
+- [x] **CONC-01** through **CONC-04**: Dev slot limiting, queue, parallel discovery/planning, branch isolation
 
-### Discovery Agent
+### Metrics (Phase 6) ✓
+- [x] **METR-01** through **METR-04**: Cost per project, demands/week chart, time per phase, success rate
 
-- [ ] **DISC-01**: Agent recebe descricao da demanda + techStack do projeto
-- [ ] **DISC-02**: Agent produz requisitos funcionais e nao-funcionais em JSON estruturado
-- [ ] **DISC-03**: Agent estima complexidade (S/M/L/XL)
-- [ ] **DISC-04**: Se houver ambiguidade, demanda pausa e notifica humano
+### Notifications (Phase 6) ✓
+- [x] **NOTIF-01** through **NOTIF-03**: Agent failure, merge intervention, demand completion
 
-### Planning Agent
+## v1.1 Requirements
 
-- [ ] **PLAN-01**: Agent recebe requirements do Discovery + estrutura do repo
-- [ ] **PLAN-02**: Agent produz plano tecnico com tasks decompostas em JSON
-- [ ] **PLAN-03**: Plano inclui arquivos que serao criados/modificados e dependencias entre tasks
+Requirements for v1.1 release. Each maps to roadmap phases (7-11).
 
-### Development Agent
+### Navigation and UX
 
-- [ ] **DEV-01**: Orchestrador cria branch isolada (demand/{id}-{slug}) a partir da default branch
-- [ ] **DEV-02**: Agent recebe plano do Planning e executa no repo path do projeto
-- [ ] **DEV-03**: Agent faz commits atomicos durante o desenvolvimento
-- [ ] **DEV-04**: Ao concluir, PR eh criado automaticamente
+- [ ] **NAV-01**: User sees a collapsible sidebar with navigation links (Dashboard, Boards, Projects, Metrics, Settings) replacing the current top header nav
+- [ ] **NAV-02**: Sidebar shows project list with direct links to each project's board
+- [ ] **NAV-03**: Sidebar collapses to icon-only mode and persists collapse state across page navigations
+- [ ] **NAV-04**: User can access a dedicated "Boards" page that lists all projects with board access
+- [ ] **NAV-05**: On the Boards page, user can select a project and navigate to its Kanban board
+- [ ] **NAV-06**: Demand card text on the Kanban board is clickable to navigate to demand detail page
+- [ ] **NAV-07**: Clicking demand card text navigates to detail while drag-and-drop still works via separate drag handle
 
-### Testing Agent
+### WebSocket Real-Time
 
-- [ ] **TEST-01**: Agent recebe PR URL + plano original + requirements
-- [ ] **TEST-02**: Agent roda testes automatizados do projeto
-- [ ] **TEST-03**: Agent analisa qualidade do codigo e aderencia ao plano
-- [ ] **TEST-04**: Agent gera relatorio de aprovacao ou rejeicao
-- [ ] **TEST-05**: Se rejeitado, demanda volta para Development com feedback
+- [ ] **WS-01**: API server establishes WebSocket connections with authenticated clients via @fastify/websocket
+- [ ] **WS-02**: WebSocket connections are scoped to the user's tenant (tenant isolation on WS channels)
+- [ ] **WS-03**: Worker events (agent status change, demand update, notification) are published via Redis PubSub to the API server
+- [ ] **WS-04**: API server broadcasts relevant events to connected WebSocket clients in the same tenant
+- [ ] **WS-05**: Frontend receives WebSocket events and triggers TanStack Query cache invalidation (not full data push)
+- [ ] **WS-06**: Kanban board updates in real-time via WebSocket without polling
+- [ ] **WS-07**: Demand detail page updates agent status and runs in real-time via WebSocket
+- [ ] **WS-08**: Frontend falls back to polling if WebSocket connection drops, with automatic reconnection
 
-### Merge
+### Claude MAX Integration
 
-- [ ] **MERGE-01**: Merge queue FIFO por projeto (quem terminou Testing primeiro, faz merge primeiro)
-- [ ] **MERGE-02**: Passo 1: Agent tenta merge automatico + roda testes
-- [ ] **MERGE-03**: Passo 2: Se conflito, agent IA tenta resolver + roda testes
-- [ ] **MERGE-04**: Passo 3: Se nao resolver, card fica amarelo no board e notifica humano com contexto
-- [ ] **MERGE-05**: Humano pode resolver conflitos e sinalizar resolucao no dashboard
+- [ ] **CMAX-01**: Settings page shows toggle to choose between "API Key" mode and "Claude MAX" mode for agent execution
+- [ ] **CMAX-02**: In Claude MAX mode, agent worker spawns `claude -p` CLI subprocess instead of using the SDK
+- [ ] **CMAX-03**: CLI subprocess output is parsed to extract structured JSON matching the same schemas as SDK output
+- [ ] **CMAX-04**: Agent execution mode (SDK vs CLI) is configurable per tenant via TenantSettings
+- [ ] **CMAX-05**: Failed CLI subprocess invocations produce clear error messages and retry via the same BullMQ retry logic
 
-### Concurrency
+### Docker and Production Deploy
 
-- [ ] **CONC-01**: Ate N demandas podem estar em Development simultaneamente (N = maxConcurrentDev do projeto)
-- [ ] **CONC-02**: Demandas alem do limite ficam na fila aguardando
-- [ ] **CONC-03**: Discovery e Planning podem rodar em paralelo (read-only)
-- [ ] **CONC-04**: Cada demanda em Development trabalha em branch isolada
+- [ ] **DEPLOY-01**: Multi-stage Dockerfile for apps/api with turbo prune and minimal production image
+- [ ] **DEPLOY-02**: Multi-stage Dockerfile for apps/web with Next.js standalone output and turbo prune
+- [ ] **DEPLOY-03**: Production docker-compose.yml that runs API, web, worker, PostgreSQL, and Redis
+- [ ] **DEPLOY-04**: Environment variables are configurable via .env file for production deployment
+- [ ] **DEPLOY-05**: Database migrations run automatically on container startup
+- [ ] **DEPLOY-06**: Application can be deployed to a VPS with a single `docker compose up -d` command
+- [ ] **DEPLOY-07**: Worker container has access to Git for repository operations (volume mount or built-in)
 
-### Metrics
+### Pipeline E2E Validation
 
-- [ ] **METR-01**: Dashboard mostra custo total por projeto no mes corrente
-- [ ] **METR-02**: Dashboard mostra demandas concluidas por semana (grafico)
-- [ ] **METR-03**: Dashboard mostra tempo medio por fase
-- [ ] **METR-04**: Dashboard mostra taxa de sucesso dos agentes (% completed vs failed)
+- [ ] **PIPE-01**: A demand can flow through the complete pipeline: Inbox → Discovery → Planning → Development → Testing → Merge → Done
+- [ ] **PIPE-02**: Development agent creates an isolated branch and pushes code changes to a real repository
+- [ ] **PIPE-03**: Testing agent reviews the PR and produces approval or rejection report
+- [ ] **PIPE-04**: Approved PRs are merged automatically via the merge queue
+- [ ] **PIPE-05**: Rejected PRs trigger a feedback loop back to Development (up to 3 cycles)
 
-### Notifications
+## v2 Requirements (Deferred)
 
-- [ ] **NOTIF-01**: User recebe notificacao in-app quando agente falha
-- [ ] **NOTIF-02**: User recebe notificacao quando merge precisa de intervencao humana
-- [ ] **NOTIF-03**: User recebe notificacao quando demanda chega em Done
-
-## v2 Requirements
-
-### Real-Time
-
-- **RT-01**: WebSocket substitui polling para atualizacoes em tempo real
-- **RT-02**: Cards se movem automaticamente no board sem refresh
+### Telegram Notifications
+- **TELE-01**: User can link Telegram account to receive pipeline notifications
+- **TELE-02**: Bot sends alerts for agent failures, merge conflicts, and demand completion
+- **TELE-03**: User can configure which events trigger Telegram notifications
 
 ### Advanced Merge
-
 - **AMERGE-01**: IA aprende com resolucoes anteriores de conflitos
 - **AMERGE-02**: Diff viewer inline no dashboard para conflitos
 
 ### Analytics
-
 - **ANAL-01**: Estimativa preditiva de custo baseada em historico
 - **ANAL-02**: Comparacao de performance entre modelos de IA
 - **ANAL-03**: Analise de tendencias (tempo por fase ao longo do tempo)
 
 ### Integrations
-
-- **INT-01**: Telegram Bot para abertura de demandas
-- **INT-02**: Slack/Discord notifications
-- **INT-03**: API publica para integracoes externas
+- **INT-01**: Slack/Discord notifications
+- **INT-02**: API publica para integracoes externas
 
 ### Advanced Multi-Tenant
-
 - **MT-01**: Onboarding self-service de novos tenants
 - **MT-02**: Planos de assinatura (free/pro/enterprise) com limites
 - **MT-03**: RBAC avancado (team-level permissions)
+
+### Advanced UX
+- **UX-01**: Jira-style project navigation sidebar on board page to switch between projects
+- **UX-02**: Mobile-responsive sidebar with hamburger menu on small screens
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Mobile app nativa | Web-first. Browser mobile suficiente para MVP |
-| Agent Teams experimental | Comecar com headless mode estavel. Migrar quando Agent Teams estabilizar |
-| WYSIWYG workflow designer | Pipeline fixa de 7 fases cobre 95% dos casos. Complexidade desnecessaria |
-| Multi-model support (GPT-4, Gemini) | Claude-only simplifica prompts, testes e custos. Avaliar demanda depois |
-| Self-hosted/on-prem | Cloud-first SaaS. SOC2 e data residency sao futuro |
-| Real-time collaboration (multi-user editing) | Single owner per demand. Race conditions nao valem a complexidade |
+| Mobile app nativa | Web-first, responsive design sufficient |
+| Agent Teams experimental | SDK atual funciona, migrar quando estabilizar |
+| Marketplace de agentes | Foco na pipeline core primeiro |
+| Multi-idioma (i18n) | Portugues como idioma principal |
+| Kubernetes/Swarm | Single VPS com Docker Compose suficiente para v1.1 |
+| Full WebSocket data push | Event-based invalidation preserva TanStack Query patterns |
+| Telegram bot (v1.1) | Deferred to v1.2 per user choice — WebSocket first |
+| Multi-model (GPT-4, Gemini) | Claude-only simplifica prompts e custos |
+| Real-time collaboration | Single owner per demand, race conditions nao valem complexidade |
 
 ## Traceability
 
+### v1.0 (Phases 1-6) — Complete
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| TENANT-01 | Phase 1 | Pending |
-| TENANT-02 | Phase 1 | Pending |
-| TENANT-03 | Phase 1 | Pending |
-| TENANT-04 | Phase 1 | Pending |
-| PROJ-01 | Phase 1 | Pending |
-| PROJ-02 | Phase 1 | Pending |
-| PROJ-03 | Phase 1 | Pending |
-| PROJ-04 | Phase 1 | Pending |
-| PROJ-05 | Phase 1 | Pending |
-| BOARD-01 | Phase 2 | Pending |
-| BOARD-02 | Phase 2 | Pending |
-| BOARD-03 | Phase 2 | Pending |
-| BOARD-04 | Phase 2 | Pending |
-| BOARD-05 | Phase 2 | Pending |
-| DEM-01 | Phase 2 | Pending |
-| DEM-02 | Phase 2 | Pending |
-| DEM-03 | Phase 2 | Pending |
-| DEM-04 | Phase 3 | Pending |
-| DEM-05 | Phase 3 | Pending |
-| DEM-06 | Phase 3 | Pending |
-| AGENT-01 | Phase 3 | Pending |
-| AGENT-02 | Phase 3 | Pending |
-| AGENT-03 | Phase 3 | Pending |
-| AGENT-04 | Phase 3 | Pending |
-| AGENT-05 | Phase 3 | Pending |
-| AGENT-06 | Phase 3 | Pending |
-| AGENT-07 | Phase 3 | Pending |
-| DISC-01 | Phase 3 | Pending |
-| DISC-02 | Phase 3 | Pending |
-| DISC-03 | Phase 3 | Pending |
-| DISC-04 | Phase 3 | Pending |
-| PLAN-01 | Phase 3 | Pending |
-| PLAN-02 | Phase 3 | Pending |
-| PLAN-03 | Phase 3 | Pending |
-| DEV-01 | Phase 4 | Pending |
-| DEV-02 | Phase 4 | Pending |
-| DEV-03 | Phase 4 | Pending |
-| DEV-04 | Phase 4 | Pending |
-| TEST-01 | Phase 4 | Pending |
-| TEST-02 | Phase 4 | Pending |
-| TEST-03 | Phase 4 | Pending |
-| TEST-04 | Phase 4 | Pending |
-| TEST-05 | Phase 4 | Pending |
-| CONC-04 | Phase 4 | Pending |
-| MERGE-01 | Phase 5 | Pending |
-| MERGE-02 | Phase 5 | Pending |
-| MERGE-03 | Phase 5 | Pending |
-| MERGE-04 | Phase 5 | Pending |
-| MERGE-05 | Phase 5 | Pending |
-| CONC-01 | Phase 5 | Pending |
-| CONC-02 | Phase 5 | Pending |
-| CONC-03 | Phase 5 | Pending |
-| METR-01 | Phase 6 | Pending |
-| METR-02 | Phase 6 | Pending |
-| METR-03 | Phase 6 | Pending |
-| METR-04 | Phase 6 | Pending |
-| NOTIF-01 | Phase 6 | Pending |
-| NOTIF-02 | Phase 6 | Pending |
-| NOTIF-03 | Phase 6 | Pending |
+| INFRA-01..05 | Phase 1 | Complete |
+| AUTH-01..04 | Phase 1 | Complete |
+| TENANT-01..04 | Phase 1 | Complete |
+| PROJ-01..05 | Phase 1 | Complete |
+| BOARD-01..05 | Phase 2 | Complete |
+| DEM-01..03 | Phase 2 | Complete |
+| DEM-04..06, AGENT-01..07, DISC-01..04, PLAN-01..03 | Phase 3 | Complete |
+| DEV-01..04, TEST-01..05, CONC-04 | Phase 4 | Complete |
+| MERGE-01..05, CONC-01..03 | Phase 5 | Complete |
+| METR-01..04, NOTIF-01..03 | Phase 6 | Complete |
+
+### v1.1 (Phases 7-11) — Active
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| NAV-01 | Phase 7 | Pending |
+| NAV-02 | Phase 7 | Pending |
+| NAV-03 | Phase 7 | Pending |
+| NAV-04 | Phase 7 | Pending |
+| NAV-05 | Phase 7 | Pending |
+| NAV-06 | Phase 7 | Pending |
+| NAV-07 | Phase 7 | Pending |
+| WS-01 | Phase 8 | Pending |
+| WS-02 | Phase 8 | Pending |
+| WS-03 | Phase 8 | Pending |
+| WS-04 | Phase 8 | Pending |
+| WS-05 | Phase 8 | Pending |
+| WS-06 | Phase 8 | Pending |
+| WS-07 | Phase 8 | Pending |
+| WS-08 | Phase 8 | Pending |
+| CMAX-01 | Phase 9 | Pending |
+| CMAX-02 | Phase 9 | Pending |
+| CMAX-03 | Phase 9 | Pending |
+| CMAX-04 | Phase 9 | Pending |
+| CMAX-05 | Phase 9 | Pending |
+| DEPLOY-01 | Phase 10 | Pending |
+| DEPLOY-02 | Phase 10 | Pending |
+| DEPLOY-03 | Phase 10 | Pending |
+| DEPLOY-04 | Phase 10 | Pending |
+| DEPLOY-05 | Phase 10 | Pending |
+| DEPLOY-06 | Phase 10 | Pending |
+| DEPLOY-07 | Phase 10 | Pending |
+| PIPE-01 | Phase 11 | Pending |
+| PIPE-02 | Phase 11 | Pending |
+| PIPE-03 | Phase 11 | Pending |
+| PIPE-04 | Phase 11 | Pending |
+| PIPE-05 | Phase 11 | Pending |
 
 **Coverage:**
-- v1 requirements: 68 total
-- Mapped to phases: 68
-- Unmapped: 0
+- v1.0 requirements: 68 total — 68 complete ✓
+- v1.1 requirements: 29 total
+- Mapped to phases: 29
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after roadmap creation*
+*Last updated: 2026-02-13 after v1.1 milestone definition*

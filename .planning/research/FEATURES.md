@@ -1,271 +1,514 @@
-# Feature Research
+# Feature Landscape: v1.1 New Features
 
-**Domain:** AI Agent Orchestration Platform for Software Development
-**Researched:** 2026-02-11
-**Confidence:** MEDIUM (based on training data, project context analysis, and domain expertise patterns)
+**Domain:** AI Agent Orchestration Platform -- UX Overhaul + Production Readiness
+**Researched:** 2026-02-13
+**Scope:** Sidebar navigation, clickable cards, Claude MAX, WebSocket, Telegram bot, Docker deploy
 
-**Note:** WebSearch unavailable for this research. Findings based on training data (stale by 6-18 months), analysis of project context, and established patterns in workflow orchestration, CI/CD, and AI agent systems. Treat as hypothesis requiring validation against current market offerings.
+---
 
-## Feature Landscape
+## 1. Jira-Style Sidebar Navigation with Project Switcher
+
+### Expected Behavior
+
+Users expect a persistent left sidebar that replaces the current top-nav header. The sidebar provides hierarchical navigation: workspace-level items (metrics, settings) at the bottom, project-specific boards accessible from a project switcher at the top.
+
+**Standard UX pattern:**
+
+| Element | Behavior |
+|---------|----------|
+| **Sidebar container** | Fixed left, 240-280px wide when expanded, 48-64px when collapsed (icon-only mode) |
+| **Collapse toggle** | Button at sidebar bottom or top; persists user preference to localStorage |
+| **Project switcher** | Dropdown or popover at sidebar top showing all org projects; selected project highlights; quick-create option |
+| **Project items** | When a project is selected: Board, Demands list, Settings appear as nav items indented under project |
+| **Global items** | Dashboard (home), Metrics, Settings, Notifications always visible regardless of selected project |
+| **Mobile** | Sidebar becomes off-canvas overlay (sheet), triggered by hamburger icon |
+| **Active state** | Current page highlighted in sidebar with background color + bold text |
+| **Keyboard** | `Cmd+K` or `Cmd+/` for quick project/navigation search (stretch goal) |
+
+**What changes from current layout:**
+- Current: `<header>` top bar with `<nav>` links (Projects, Metrics, Settings) + notification bell + user info
+- New: Left sidebar takes over navigation; header shrinks to breadcrumb + user actions only, or merges into sidebar
+
+### Complexity: MEDIUM
+
+- shadcn/ui has a full Sidebar component (SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarGroup, SidebarTrigger, SidebarFooter) with collapsible modes: `offcanvas`, `icon`, `none`
+- The `useSidebar` hook provides state management (open, setOpen, toggleSidebar, isMobile)
+- Main challenge: refactoring `(dashboard)/layout.tsx` from horizontal nav to sidebar layout without breaking existing routes
+- Project switcher requires fetching projects list and storing selected project in URL params or context
+
+**Confidence:** HIGH -- shadcn/ui Sidebar is a first-class component with extensive documentation and block examples.
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| `(dashboard)/layout.tsx` | **Rewrite** -- current top-nav header replaced with sidebar layout |
+| Project list API (`/api/projects`) | **Reuse** -- sidebar fetches same project list |
+| Route structure `(dashboard)/projects/[projectId]/board` | **Reuse** -- sidebar links point to existing routes |
+| NotificationBell component | **Move** -- relocates from header to sidebar footer or stays in reduced header |
+
+---
+
+## 2. Clickable Demand Cards (Navigate on Text, Drag on Handle)
+
+### Expected Behavior
+
+Currently, the `DemandCard` component uses `<KanbanItem asHandle>` which makes the entire card a drag handle. Navigation is via a tiny `<ExternalLink>` icon with `stopPropagation`. Users expect to click on the card text/body to navigate to the detail page, while drag-and-drop still works by grabbing the card edge or a dedicated drag handle.
+
+**Standard UX pattern:**
+
+| Interaction | Expected Result |
+|-------------|----------------|
+| **Click on card text/title** | Navigate to `/demands/{id}` detail page |
+| **Click and hold, then drag** | Initiate drag-and-drop to move between columns |
+| **Quick click (no drag)** | Always navigates, never triggers drop |
+| **Touch on mobile** | Tap navigates; long-press + drag moves card |
+
+**Implementation approach:**
+
+The core fix is removing `asHandle` from `<KanbanItem>` so the entire item is NOT a drag handle, then using dnd-kit's separate handle concept. Two patterns:
+
+1. **Separate drag handle area**: Add a small grip icon (6-dot grip or `GripVertical` from lucide-react) on the left edge of the card. Only that area is draggable. The rest of the card is a `<Link>` to the detail page.
+
+2. **Sensor-based approach**: Use dnd-kit's `PointerSensor` with `activationConstraint: { distance: 8 }` so short clicks navigate and only movement beyond 8px activates drag. This is the more seamless UX but can feel ambiguous.
+
+**Recommended:** Pattern 1 (separate drag handle) because it is unambiguous. Users see the grip icon and know "grab here to drag." Clicking anywhere else on the card navigates. This is the pattern used by Jira, Linear, Notion, and Trello.
+
+### Complexity: LOW
+
+- Remove `asHandle` from `<KanbanItem>`
+- Add `<KanbanItemHandle>` component (or equivalent) wrapping a grip icon
+- Wrap card text in `<Link href={/demands/${demand.id}}>`
+- Ensure `stopPropagation` on the Link's pointer events does not interfere with drag
+- May need dnd-kit's `useSortable` hook with explicit `listeners` only on the handle element
+
+**Confidence:** HIGH -- dnd-kit explicitly supports separate handles via `listeners` prop. The current Kanban UI component already has `KanbanItemHandle` concept.
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| `demand-card.tsx` | **Modify** -- add grip handle, wrap text in Link |
+| `kanban-board.tsx` | **Modify** -- remove `asHandle` from KanbanItem, pass handle listeners separately |
+| `@dnd-kit/core` and `@dnd-kit/sortable` | **Reuse** -- handle pattern is built-in |
+| Demand detail page (`/demands/[demandId]`) | **Reuse** -- no changes needed |
+
+---
+
+## 3. Claude MAX Integration (API Key vs Subscription Toggle)
+
+### Expected Behavior
+
+Users who have a Claude MAX subscription ($100-200/mo) can use it for agent execution instead of a pay-per-token API key. The Settings page should let the tenant choose their execution mode.
+
+**Standard behavior based on research:**
+
+| Aspect | API Key Mode (Current) | MAX Subscription Mode (New) |
+|--------|------------------------|----------------------------|
+| **Authentication** | `ANTHROPIC_API_KEY` env var | `CLAUDE_CODE_OAUTH_TOKEN` env var |
+| **Cost model** | Pay-per-token (metered) | Flat monthly fee (included in subscription) |
+| **Configuration** | Tenant enters API key in Settings | Admin runs `claude setup-token` on server, enters token in Settings |
+| **SDK compatibility** | Claude Agent SDK `query()` uses API key automatically | Claude Agent SDK `query()` uses OAuth token when `CLAUDE_CODE_OAUTH_TOKEN` is set and no `ANTHROPIC_API_KEY` is present |
+| **Rate limits** | API rate limits (tokens/min, requests/min) | Shared with claude.ai usage; subject to MAX plan limits |
+| **Token tracking** | Accurate per-request (returned by SDK) | Still reported by SDK, but not billed per-token |
+
+**Critical constraints discovered:**
+
+1. **Policy restriction (Jan 2026):** Anthropic does not allow third-party developers to offer claude.ai login or rate limits for their products via OAuth, unless previously approved. The supported path for third-party tools is the API key. However, TechTeam is not a "third-party harness" -- it is the tenant's own deployment using their own subscription. This is a gray area that needs monitoring.
+
+2. **Authentication priority:** Claude Code prioritizes `ANTHROPIC_API_KEY` over `CLAUDE_CODE_OAUTH_TOKEN`. If both exist, API key wins. The backend must ensure only one is set per execution context.
+
+3. **Token refresh:** OAuth tokens expire and need refresh. The `claude setup-token` command generates a token, but for long-running server processes, token refresh reliability is a concern.
+
+4. **12-second startup overhead:** The Agent SDK `query()` function has ~12 seconds startup overhead due to CLI process initialization. This exists for BOTH auth methods and is not specific to MAX.
+
+**Settings UI expected flow:**
+
+1. Settings page shows radio/toggle: "API Key" vs "Claude MAX Subscription"
+2. If API Key selected: existing text input for `sk-ant-xxxxx`
+3. If MAX selected: text input for OAuth token (generated via `claude setup-token` on the server)
+4. Backend `base-agent.ts` reads tenant settings to determine which env var to pass to the SDK
+5. Cost tracking still works (SDK reports token usage regardless of billing method), but cost display should note "included in subscription" for MAX mode
+
+### Complexity: MEDIUM-HIGH
+
+- Schema change: add `executionMode` ("api_key" | "claude_max") and `claudeOauthToken` to TenantSettings
+- Settings page: add mode toggle UI
+- `base-agent.ts` (`executeAgent`): must dynamically set auth based on tenant settings (currently uses global `config.ANTHROPIC_API_KEY`)
+- **Key challenge**: The Agent SDK reads from environment variables. Per-tenant auth means either (a) spawning the SDK process with tenant-specific env vars, or (b) finding an SDK parameter for auth override. The current `query()` call does not expose an `apiKey` parameter -- it reads from env.
+- This may require spawning the agent process with modified env: `{ ANTHROPIC_API_KEY: tenantApiKey }` or `{ CLAUDE_CODE_OAUTH_TOKEN: tenantOauthToken }` per job
+
+**Confidence:** MEDIUM -- The SDK's `query()` function works with both auth methods, but per-tenant dynamic switching at runtime needs validation. The env-var-based auth of the SDK is not designed for multi-tenant scenarios. May need process-level isolation per tenant execution.
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| `TenantSettings` model | **Extend** -- add executionMode, claudeOauthToken fields |
+| Settings page (`settings/page.tsx`) | **Extend** -- add mode toggle, OAuth token input |
+| `base-agent.ts` (`executeAgent`) | **Modify** -- pass tenant-specific auth to SDK |
+| `agent.worker.ts` | **Modify** -- fetch tenant settings before agent execution, set env vars |
+| `config.ts` | **Modify** -- global ANTHROPIC_API_KEY becomes fallback only |
+
+---
+
+## 4. WebSocket Real-Time (Replacing Polling)
+
+### Expected Behavior
+
+Replace the current polling pattern (5s Kanban, 10s notifications) with WebSocket push for instant updates. When an agent completes a phase, the board and notifications update within 100-300ms instead of waiting up to 5-10 seconds.
+
+**Current polling points to replace:**
+
+| Component | Current Pattern | New Pattern |
+|-----------|----------------|-------------|
+| `kanban-board.tsx` | `refetchInterval: 5000` via react-query | WebSocket event `demand:updated` triggers query invalidation |
+| `notification-bell.tsx` | `refetchInterval: 10_000` for unread count | WebSocket event `notification:new` pushes count + data |
+| Demand detail page | `staleTime: 0` with manual refetch | WebSocket event `demand:{id}:updated` pushes changes |
+| Agent run status | Polling via demand detail | WebSocket event `agent-run:updated` pushes status changes |
+
+**Standard WebSocket architecture for this stack:**
+
+1. **Server**: `@fastify/websocket` plugin on the existing Fastify server. Register a WebSocket route (e.g., `GET /ws`) that upgrades the connection.
+
+2. **Authentication**: On WebSocket connection, validate the session cookie (same cookie sent to REST API). Extract tenantId from session. Reject unauthenticated connections.
+
+3. **Rooms/Channels**: Use a Map-based room system (no need for Socket.IO rooms):
+   - `tenant:{tenantId}` -- all notifications for the org
+   - `project:{projectId}` -- board updates for a specific project
+   - `demand:{demandId}` -- detail page updates for a specific demand
+   - Client sends a `subscribe` message specifying which rooms to join
+
+4. **Server-side emission**: When the agent worker updates a demand stage, notification, etc., it publishes to Redis pub/sub. The WebSocket server subscribes to Redis and broadcasts to connected clients in the appropriate room.
+
+5. **Client**: A singleton WebSocket connection manager (React context or module-level). On receiving events, invalidate the relevant react-query cache keys so data refetches, OR directly update the cache with the pushed data.
+
+6. **Fallback**: Keep polling as fallback if WebSocket disconnects. react-query's `refetchInterval` can be conditionally enabled when WS is disconnected.
+
+**Message format (server to client):**
+```json
+{
+  "event": "demand:updated",
+  "data": { "demandId": "xxx", "stage": "testing", "agentStatus": "running" }
+}
+```
+
+```json
+{
+  "event": "notification:new",
+  "data": { "id": "xxx", "type": "demand_done", "title": "...", "unreadCount": 5 }
+}
+```
+
+### Complexity: MEDIUM-HIGH
+
+- `@fastify/websocket` installation and route registration
+- Session validation on WS upgrade (parse cookies, verify session via Better Auth)
+- Room management system (Map of tenantId/projectId to Set of WebSocket connections)
+- Redis pub/sub for cross-process communication (agent worker -> API server)
+- Client-side WebSocket manager with reconnection logic
+- Integration with react-query (invalidation or direct cache updates)
+- Graceful degradation to polling when WS unavailable
+
+**Confidence:** HIGH -- `@fastify/websocket` is the official Fastify plugin, uses the `ws` library under the hood, and works with the same server instance. Redis pub/sub is already available (BullMQ uses Redis). The pattern is well-established.
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| Fastify server (`server.ts`) | **Extend** -- register @fastify/websocket plugin, add /ws route |
+| Auth plugin (`plugins/auth.ts`) | **Reuse** -- WS handler validates same session cookie |
+| Redis (`lib/redis.ts`) | **Extend** -- add pub/sub channels alongside BullMQ queues |
+| `agent.worker.ts` | **Modify** -- publish events to Redis pub/sub after demand/notification updates |
+| `merge.worker.ts` | **Modify** -- publish events to Redis pub/sub after merge updates |
+| `kanban-board.tsx` | **Modify** -- subscribe to project room, use WS events for cache invalidation |
+| `notification-bell.tsx` | **Modify** -- subscribe to tenant room, update count on WS events |
+| react-query setup | **Extend** -- add WebSocket context provider for global connection management |
+
+---
+
+## 5. Telegram Bot Notifications
+
+### Expected Behavior
+
+Users link their Telegram account in Settings, then receive pipeline event notifications (agent failures, demand completion, merge needing human intervention) as Telegram messages.
+
+**Standard Telegram bot UX:**
+
+| Step | User Action | System Behavior |
+|------|-------------|-----------------|
+| **1. Setup** | Admin creates bot via @BotFather in Telegram | Gets bot token; stored in env or TenantSettings |
+| **2. Link account** | User clicks "Link Telegram" in Settings, sees a deep link `https://t.me/{bot_username}?start={link_token}` | App generates a unique one-time link token associated with the user/tenant |
+| **3. Activate** | User opens link in Telegram, sends `/start` | Bot receives the start command with link_token, maps Telegram chatId to the user/tenant in DB |
+| **4. Confirm** | System shows "Telegram linked" in Settings | TenantSettings stores telegramChatId; Settings UI shows linked status |
+| **5. Receive** | Notifications arrive in Telegram chat | Bot sends formatted messages for configured event types |
+| **6. Unlink** | User clicks "Unlink" in Settings | Removes telegramChatId; stops messages |
+
+**Notification types to forward:**
+
+| Event | Telegram Message |
+|-------|-----------------|
+| `agent_failed` | "Agent failed during {phase} for demand '{title}'. Check dashboard." |
+| `merge_needs_human` | "Merge conflict needs human resolution for '{title}'. Review required." |
+| `demand_done` | "Demand '{title}' completed and merged successfully." |
+
+**Technology choice: grammY** because:
+- Superior TypeScript support (type-safe Bot API)
+- Lighter than Telegraf, actively maintained
+- Built-in webhook adapter (production) and long-polling (development)
+- Works well with Fastify via `webhookCallback('fastify')`
+
+**Production deployment:**
+- Use webhooks in production (not long polling) -- the Fastify server exposes a `/telegram/webhook` endpoint
+- Telegram sends POST requests to this endpoint when users interact with the bot
+- Requires HTTPS (the Docker/VPS deploy with reverse proxy handles this)
+- For development, use long polling (no public URL needed)
+
+### Complexity: MEDIUM
+
+- grammY library setup with bot token
+- Schema: add `telegramChatId` and `telegramLinkToken` to user or TenantSettings
+- Settings UI: "Link Telegram" button generating deep link, status indicator
+- Bot command handler: `/start {linkToken}` to associate chatId
+- Notification emission: extend `agent.worker.ts` and `merge.worker.ts` to call Telegram send after creating in-app notification
+- Webhook route registration in Fastify for production; long-polling for dev
+- Message formatting (Markdown or HTML for Telegram messages)
+
+**Confidence:** HIGH -- grammY is well-documented, the webhook pattern with Fastify is straightforward, and the Telegram Bot API is stable and simple.
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| Notification system (`agent.worker.ts`, `merge.worker.ts`) | **Extend** -- after creating Notification record, also send Telegram if linked |
+| TenantSettings model | **Extend** -- add telegramBotToken, per-user telegramChatId |
+| Settings page | **Extend** -- add Telegram link/unlink section |
+| Prisma schema | **Extend** -- may need per-user telegram mapping (not just per-tenant) |
+| Fastify server | **Extend** -- add webhook route for Telegram callbacks |
+
+---
+
+## 6. Docker Production Deploy
+
+### Expected Behavior
+
+The entire monorepo (API + Web + Worker + Postgres + Redis) runs as a set of Docker containers on a VPS, orchestrated by docker-compose. A single `docker compose up -d` brings the entire platform online.
+
+**Current state:**
+- `docker-compose.yml` exists with only Postgres and Redis (development infrastructure)
+- No Dockerfiles exist for the application code
+- No production configuration
+
+**Expected production docker-compose architecture:**
+
+| Service | Base Image | Purpose | Port |
+|---------|------------|---------|------|
+| `api` | `node:22-alpine` | Fastify API server | 3010 |
+| `worker` | `node:22-alpine` | BullMQ agent worker + merge worker | none (background) |
+| `web` | `node:22-alpine` | Next.js standalone server | 3009 |
+| `postgres` | `postgres:16-alpine` | Database | 5433 |
+| `redis` | `redis:7-alpine` | Queue + pub/sub | 6380 |
+| `nginx` | `nginx:alpine` | Reverse proxy + SSL termination | 80, 443 |
+
+**Multi-stage Dockerfile pattern for monorepo:**
+
+```
+Stage 1 (base):     node:22-alpine, install pnpm
+Stage 2 (prune):    turbo prune --scope=@techteam/api --docker
+Stage 3 (install):  Copy pruned package.json files, pnpm install --frozen-lockfile
+Stage 4 (build):    Copy source files, turbo build --filter=@techteam/api
+Stage 5 (runner):   Copy only built artifacts, minimal runtime
+```
+
+This pattern uses `turbo prune` to create a minimal subset of the monorepo for each service, dramatically reducing image size.
+
+**For Next.js (web):**
+- Use `output: 'standalone'` in `next.config.js` to produce a self-contained server
+- The standalone output includes only necessary dependencies, reducing image from ~1GB to ~100-200MB
+- Copy `.next/standalone`, `.next/static`, and `public` to the runner stage
+
+**Production considerations:**
+
+| Concern | Solution |
+|---------|----------|
+| **Secrets** | `.env` file mounted via docker-compose `env_file`, NOT baked into image |
+| **SSL** | Let's Encrypt via Certbot + nginx, or Caddy as reverse proxy (auto-SSL) |
+| **Health checks** | Each service has `/health` endpoint; docker-compose healthcheck config |
+| **Restart policy** | `restart: unless-stopped` for all services |
+| **Volumes** | Postgres data, Redis data, git repos (agent needs filesystem access) |
+| **Git repos** | Agent worker needs access to cloned repos; mount a volume for `/repos` |
+| **Logging** | JSON logging to stdout; collect via docker logs or log aggregator |
+| **Updates** | `docker compose pull && docker compose up -d` for rolling updates |
+
+**Critical: Agent worker filesystem access.** The agent worker clones Git repos and runs Claude Code SDK which executes file operations. The worker container needs:
+- A persistent volume mounted for repo storage
+- Git installed in the container
+- The Claude Code CLI installed (for SDK subprocess)
+- Network access to GitHub and Anthropic API
+
+### Complexity: HIGH
+
+- Dockerfiles for api, web, worker (3 separate multi-stage files or shared base)
+- `turbo prune` integration for optimized builds
+- Next.js standalone output configuration
+- Production docker-compose with all services, networking, volumes
+- nginx configuration for reverse proxy + SSL
+- Worker container with Git + Claude Code SDK dependencies
+- Environment variable management (.env, secrets)
+- Health checks and restart policies
+- CI/CD pipeline for building and pushing images (optional, manual deploy first)
+
+**Confidence:** HIGH for standard containerization patterns. MEDIUM for the agent worker container (Claude Code SDK requires specific runtime dependencies that may need investigation).
+
+### Dependencies on Existing
+
+| Existing Feature | Relationship |
+|------------------|-------------|
+| `docker-compose.yml` | **Extend** -- add api, web, worker, nginx services to existing postgres/redis |
+| `turbo.json` | **Reuse** -- turbo prune uses existing workspace config |
+| `package.json` (root) | **Reuse** -- pnpm workspace config |
+| Agent worker (`agent.worker.ts`) | **Adapt** -- ensure repoPath references work inside container |
+| `config.ts` | **Adapt** -- env vars loaded from Docker env, not local .env file |
+| `next.config.ts` | **Modify** -- add `output: 'standalone'` |
+
+---
+
+## Feature Classification Summary
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist. Missing these = product feels incomplete.
+Features that feel broken or missing without them.
 
-| Feature | Why Expected | Complexity | Notes |
+| Feature | Why Expected | Complexity | Phase |
 |---------|--------------|------------|-------|
-| **Visual Pipeline/Workflow View** | Users expect to see their work flowing through stages visually (like Kanban/CI pipelines) | MEDIUM | Kanban board already in project context. Need real-time updates, drag-drop, visual status |
-| **Agent Execution Logs** | Users need visibility into what agents are doing/did, especially when things fail | MEDIUM | Already in project context. Must include stdout/stderr, decision points, tool calls |
-| **Task/Demand Queue Management** | Users expect to queue work and see what's in progress vs waiting | LOW | Already in project context (Inbox stage). Need prioritization, filters, search |
-| **Execution Status/Progress Tracking** | Users need to know "where is my work?" at any moment | MEDIUM | Real-time status per phase, progress indicators, ETA estimates |
-| **Cost/Token Tracking** | AI = money. Users expect visibility into spend per project/demand | MEDIUM | Already in project context. Aggregate by project, time period, phase, demand |
-| **Error Handling & Retry** | Agents fail. Users expect failures to be caught and retryable | MEDIUM | Need failure detection, manual retry, auto-retry with backoff for transient errors |
-| **Multi-Project Support** | Users have multiple projects/repos to manage | MEDIUM | Already in project context. Workspace switcher, cross-project dashboard |
-| **Human-in-the-Loop Override** | Users expect ability to intervene when agents get stuck or wrong | HIGH | Critical for merge conflicts (in context), but also Discovery/Planning validation points |
-| **Audit Trail / History** | Users need "what happened when and why" for compliance/debugging | MEDIUM | Immutable log of all agent actions, decisions, human overrides |
-| **Authentication & Authorization** | Multi-tenant platform requires user identity, permissions, resource isolation | MEDIUM | User accounts, role-based access (admin/dev/viewer), project permissions |
-| **Git Integration** | Software development = Git. Users expect seamless repo connection | MEDIUM | Already in context. Clone, branch, commit, push, PR creation, conflict detection |
-| **Notification System** | Users expect to be alerted when agent needs help or finishes work | LOW | Phase completion, failures, human intervention required |
+| **Sidebar navigation** | Current top-nav is flat; project management tools universally use sidebars; multi-project navigation requires hierarchy | MEDIUM | Early |
+| **Clickable demand cards** | Users instinctively click cards to open them; the tiny icon link is a usability anti-pattern | LOW | Early |
+| **WebSocket real-time** | 5s polling lag feels broken when watching an agent execute; users expect instant feedback in 2026 | MEDIUM-HIGH | Mid |
+| **Docker production deploy** | Cannot ship a SaaS product running on `npm run dev` on a VPS; containerization is table stakes for production | HIGH | Late |
 
-### Differentiators (Competitive Advantage)
+### Differentiators
 
-Features that set the product apart. Not required, but valuable.
+Features that distinguish TechTeam from competitors and add unique value.
 
-| Feature | Value Proposition | Complexity | Notes |
+| Feature | Value Proposition | Complexity | Phase |
 |---------|-------------------|------------|-------|
-| **Intelligent Agent Escalation (3-tier merge)** | Most platforms fail on conflicts. 3-tier (auto → AI → human) minimizes friction | HIGH | Already in project context. Auto-merge where possible, AI conflict resolution, human fallback |
-| **Concurrent Demand Execution per Project** | Throughput multiplier. Up to 3 demands in Development phase simultaneously | HIGH | Requires conflict detection, branch management, resource coordination. Already in context (3 concurrent) |
-| **Cross-Phase Learning/Context Propagation** | Agents learn from Discovery → Planning → Development. Most platforms treat phases independently | HIGH | Context from Discovery informs Planning, Planning informs Development. Shared memory/knowledge graph |
-| **Predictive Cost Estimation** | "This demand will cost $X based on similar past work" reduces budget surprises | MEDIUM | Historical analysis, pattern matching, confidence intervals |
-| **Smart Phase Gating** | Agents determine "is output quality sufficient to proceed?" vs manual gates | HIGH | Quality checks, test coverage, lint passing, requirements coverage before next phase |
-| **Developer Feedback Loop Integration** | Agent learns from human corrections during merge/review | HIGH | Capture corrections, patterns, preferences. Feed back to improve future agent behavior |
-| **Time-to-Phase Metrics Dashboard** | "Planning takes 2.3x longer this month" insights. Most platforms show cost, not velocity | MEDIUM | Already partially in context (time per phase). Add trends, anomaly detection, bottleneck identification |
-| **Demand Dependency Management** | "Feature B depends on Feature A" automatic sequencing | MEDIUM | Dependency graph, automatic queue reordering, blocked state handling |
-| **Agent Performance Analytics** | Which agent models/configs perform best for which phase types | MEDIUM | A/B testing results, model comparison, configuration optimization recommendations |
-| **Rollback/Version Control for Agents** | Agent config change broke things. Rollback to previous version | LOW | Version agent prompts/configs, easy rollback, diff view |
-| **Custom Phase Templates** | "Our Discovery needs extra steps" configurability | MEDIUM | Phase workflow customization, custom tool integrations, org-specific patterns |
-| **Branch Strategy Automation** | Automatically create feature branches, manage naming conventions, clean up merged branches | LOW | Git automation, configurable naming patterns, stale branch cleanup |
+| **Claude MAX integration** | Cost reduction for heavy users; unlocks flat-rate AI execution vs per-token metering; no competitor offers this toggle | MEDIUM-HIGH | Mid |
+| **Telegram bot notifications** | Meets users where they are (mobile/Telegram); pipeline status without opening the dashboard; especially valuable for Brazilian market where Telegram is popular | MEDIUM | Mid-Late |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features (Do NOT Build for v1.1)
 
-Features that seem good but create problems.
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Socket.IO instead of raw WebSocket** | Adds 80KB+ client bundle, unnecessary abstraction over ws, Fastify has native WS plugin | Use `@fastify/websocket` (raw ws) with a thin message protocol |
+| **Full Telegram bot with commands** | Scope creep; users don't need to interact WITH the bot, just receive alerts | One-way notification bot only; no command interface beyond `/start` for linking |
+| **WhatsApp Business API** | Expensive ($0.05+/message), complex approval process, Meta business verification | Start with Telegram only; add WhatsApp in v2 if demand exists |
+| **SSE (Server-Sent Events) instead of WebSocket** | One-directional only; WebSocket needed for client subscribe/unsubscribe messages and future bidirectional features (live agent terminal) | Use WebSocket; SSE is simpler but limits future expansion |
+| **Kubernetes deploy** | Massive overkill for a single-VPS SaaS product; operational complexity without benefit at this scale | Docker Compose; migrate to K8s only when scaling beyond single VPS |
+| **Auto-deploy CI/CD pipeline** | Nice but not MVP for v1.1; manual `docker compose up` is sufficient initially | Document manual deploy process; add GitHub Actions CD in v1.2 |
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Real-time Collaboration (Multiple Users Editing Same Demand)** | "Like Google Docs for demands" | Conflicts, race conditions, unclear ownership, complexity >> value | Single owner per demand, handoff mechanism, comment/feedback system |
-| **Unlimited Concurrent Demands per Project** | "Why limit to 3? Let me run 10!" | Merge conflicts explode, Git chaos, resource contention, diminishing returns | Hard limit at 3 (in context). Queue others. Focus on throughput, not concurrency |
-| **Full Agent Autonomy (No Human Gates)** | "Let agents do everything" | Agents hallucinate, make wrong assumptions, cost runaway. Users lose control | Keep human gates at key points: post-Discovery requirements validation, post-Merge review |
-| **Custom Agent Models per Phase** | "Use GPT-4 for Planning, Claude for Development" | Configuration explosion, testing matrix grows, unclear which model caused issues | Single model family (Claude in this case). Optimize prompts, not model switching |
-| **Slack/Teams Real-Time Notifications for Everything** | "Notify me of every phase transition" | Notification fatigue, interruption hell | Batch notifications, configurable alerting (only failures + completion), daily digest |
-| **WYSIWYG Workflow Designer** | "Drag-drop to build custom pipelines" | Complexity for 95% of users who use standard flow. Maintenance burden | Fixed 7-stage pipeline (in context) with configurability at phase internals, not structure |
-| **Agent Personality Customization** | "Make my agent sound like a pirate" | Gimmick that distracts from core value. Testing complexity | Professional, consistent agent voice. Focus on output quality, not personality |
-| **Self-Hosted Infrastructure Required** | "We need on-prem for security" | Massive operational burden, slow updates, support complexity for early product | Cloud-first SaaS (multi-tenant in context). SOC2, data residency options later if needed |
+---
 
-## Feature Dependencies
+## Feature Dependencies (v1.1 Internal)
 
 ```
-Authentication & Authorization
-    └──requires──> Multi-Tenant Infrastructure
-                       └──requires──> Project Isolation
-                                          └──enables──> Multi-Project Support
+Sidebar Navigation (standalone -- no dependencies on other v1.1 features)
+    enables: better multi-project UX
 
-Git Integration
-    └──requires──> Branch Strategy Automation
-    └──enables──> Merge Conflict Detection
-                      └──requires──> Intelligent Agent Escalation (3-tier)
+Clickable Demand Cards (standalone -- no dependencies on other v1.1 features)
+    enables: faster demand inspection workflow
 
-Agent Execution Logs
-    └──enables──> Audit Trail / History
-    └──enables──> Agent Performance Analytics
-    └──enables──> Developer Feedback Loop Integration
+WebSocket Real-Time
+    requires: Docker deploy (for production WebSocket behind nginx)
+    enhances: Notification system (instant push)
+    enhances: Kanban board (instant updates)
 
-Task Queue Management
-    └──enables──> Concurrent Demand Execution
-                      └──requires──> Conflict Detection
-                      └──requires──> Resource Coordination
+Claude MAX Integration (standalone -- independent of other v1.1 features)
+    modifies: agent execution auth flow
 
-Cost/Token Tracking
-    └──enables──> Predictive Cost Estimation
+Telegram Bot Notifications
+    benefits-from: WebSocket (can piggyback on same event emission)
+    requires: Docker deploy (webhook needs public HTTPS endpoint)
 
-Execution Status Tracking
-    └──enables──> Time-to-Phase Metrics Dashboard
-    └──enables──> Smart Phase Gating
-
-Cross-Phase Learning
-    └──requires──> Agent Execution Logs
-    └──requires──> Audit Trail
-    └──enhances──> Agent Performance Analytics
-
-Demand Dependency Management
-    └──requires──> Task Queue Management
-    └──enhances──> Concurrent Demand Execution
+Docker Production Deploy
+    requires: all other features complete (deploy what's done)
+    enables: WebSocket in production (nginx reverse proxy)
+    enables: Telegram webhook (public HTTPS endpoint)
 ```
 
-### Dependency Notes
+### Dependency Graph (Build Order)
 
-- **Authentication enables Multi-Tenant:** User identity required before resource isolation
-- **Git Integration enables Merge Escalation:** Can't resolve conflicts without Git awareness
-- **Logs enable Analytics:** Historical data required for performance analysis and learning
-- **Queue enables Concurrency:** Can't manage 3 concurrent demands without queue orchestration
-- **Status Tracking enables Metrics:** Real-time tracking required before aggregation/analytics
-- **Cross-Phase Learning requires Logs:** Need execution history to propagate context
+```
+Phase 1 (No Dependencies):
+    [Sidebar Navigation] [Clickable Cards] [Claude MAX Integration]
+         |                      |                    |
+         v                      v                    v
+    Immediate UX wins     Immediate UX win    Settings page extension
 
-## MVP Definition
+Phase 2 (Build on Existing):
+    [WebSocket Real-Time]
+         |
+         v
+    Backend + frontend infra for real-time events
 
-### Launch With (v1)
+Phase 3 (Needs HTTPS/Public URL):
+    [Telegram Bot Notifications]
+         |
+         v
+    Bot setup, linking flow, notification emission
 
-Minimum viable product — what's needed to validate the concept.
+Phase 4 (Packages Everything):
+    [Docker Production Deploy]
+         |
+         v
+    Dockerfiles, compose, nginx, SSL, deploy
+```
 
-- [x] **7-Stage Pipeline Visual (Kanban)** — Core UX. Users see work flowing Inbox → Done
-- [x] **Agent Execution Logs** — Transparency. Users trust when they see what agents did
-- [x] **Task Queue Management** — Work intake. Users add demands, see queue
-- [x] **Multi-Project Support** — Essential for real-world use. Single project = toy
-- [x] **Git Integration (Basic)** — Clone, branch, commit, push. No platform value without this
-- [x] **Cost/Token Tracking (Per-Demand)** — Economic viability check. Users need to know spend
-- [x] **3-Tier Merge Escalation** — Core differentiator. Auto → AI → Human
-- [x] **Concurrent Demand Execution (3 max)** — Throughput differentiator. Queue-only = slow
-- [x] **Error Handling & Manual Retry** — Agents fail. Users need recovery path
-- [x] **Authentication & Basic RBAC** — Multi-tenant requires user accounts, project access control
-- [x] **Execution Status Tracking** — Users need "where is my demand?" visibility
-- [x] **Notification System (Failures + Completion)** — Users need alerts when intervention required
+---
 
-**Why these 12:** Without these, the platform doesn't deliver on core promise: "AI agents autonomously execute software development pipeline with minimal human intervention."
+## MVP Recommendation for v1.1
 
-### Add After Validation (v1.x)
+### Must Ship (Core of this milestone)
 
-Features to add once core is working and users are actively using v1.
+1. **Sidebar navigation** -- Biggest visual change; transforms the app from "prototype" to "product"
+2. **Clickable demand cards** -- Trivial fix, massive UX improvement; do alongside sidebar
+3. **WebSocket real-time** -- Core infrastructure upgrade; replaces polling across all features
+4. **Docker production deploy** -- Cannot go to production without this
 
-- [ ] **Time-to-Phase Metrics Dashboard** — v1 tracks time, v1.1 adds analytics (once historical data exists)
-- [ ] **Predictive Cost Estimation** — Requires historical cost data from v1 usage
-- [ ] **Smart Phase Gating** — After observing where agents fail/succeed in v1
-- [ ] **Branch Strategy Automation** — Once Git integration proven, add conveniences
-- [ ] **Cross-Phase Learning/Context Propagation** — High complexity. Validate core flow first
-- [ ] **Developer Feedback Loop** — After observing human correction patterns in v1 merge escalations
-- [ ] **Demand Dependency Management** — Once users have enough demands to create dependencies
-- [ ] **Audit Trail (Enhanced)** — v1 has basic logs, v1.x adds compliance-grade immutable audit
-- [ ] **Agent Performance Analytics** — Requires v1 execution data across models/configs
-- [ ] **Custom Phase Templates** — After standard phases proven, allow customization
+### Should Ship (High value, reasonable scope)
 
-**Trigger for v1.x:** 10+ active projects, 100+ demands processed, user requests for specific analytics/automation
+5. **Telegram bot notifications** -- Strong differentiator for the Brazilian market; medium complexity
+6. **Claude MAX integration** -- Cost differentiator; important for heavy-usage tenants
 
-### Future Consideration (v2+)
+### Defer if Needed
 
-Features to defer until product-market fit is established.
+- Claude MAX integration has the highest risk (Anthropic policy uncertainty, per-tenant env var isolation complexity). If it blocks, ship the rest and add MAX support in v1.2.
+- Telegram can be deferred to v1.2 if timeline is tight; in-app notifications already work.
 
-- [ ] **Rollback/Version Control for Agents** — Nice-to-have. Manual config management works for v1
-- [ ] **Advanced RBAC (Team-level permissions)** — v1 has user/project. v2 adds teams, roles, fine-grained permissions
-- [ ] **SLA Monitoring & Alerting** — Enterprise feature. Requires scale and SLA commitments
-- [ ] **Multi-Model Support** — v1 uses Claude. v2 could add GPT-4, Gemini if demand exists
-- [ ] **Scheduled Demand Execution** — "Run this demand every Friday" cron-like scheduling
-- [ ] **API for External Integrations** — Once internal use cases proven, open API for Jira/Linear/etc.
-- [ ] **Demand Templates/Blueprints** — "Create React component" templates for common patterns
-- [ ] **Agent Observability (Traces, Spans)** — OpenTelemetry-style deep observability for agent internals
-- [ ] **Cost Budgets & Alerts** — "Alert when project exceeds $500/month" budget management
-- [ ] **Self-Service Agent Configuration UI** — v1 has admin-configured agents, v2 lets users tweak
-
-**Why defer:** These require product-market fit, scale, or enterprise customers to justify complexity.
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| 7-Stage Pipeline Visual (Kanban) | HIGH | MEDIUM | P1 |
-| Agent Execution Logs | HIGH | MEDIUM | P1 |
-| 3-Tier Merge Escalation | HIGH | HIGH | P1 |
-| Concurrent Demand Execution (3 max) | HIGH | HIGH | P1 |
-| Git Integration (Basic) | HIGH | MEDIUM | P1 |
-| Multi-Project Support | HIGH | MEDIUM | P1 |
-| Cost/Token Tracking (Per-Demand) | HIGH | MEDIUM | P1 |
-| Error Handling & Manual Retry | HIGH | MEDIUM | P1 |
-| Authentication & Basic RBAC | HIGH | MEDIUM | P1 |
-| Execution Status Tracking | HIGH | LOW | P1 |
-| Notification System (Basic) | MEDIUM | LOW | P1 |
-| Task Queue Management | HIGH | LOW | P1 |
-| Time-to-Phase Metrics Dashboard | MEDIUM | MEDIUM | P2 |
-| Predictive Cost Estimation | MEDIUM | MEDIUM | P2 |
-| Smart Phase Gating | HIGH | HIGH | P2 |
-| Branch Strategy Automation | LOW | LOW | P2 |
-| Cross-Phase Learning | HIGH | HIGH | P2 |
-| Developer Feedback Loop | HIGH | HIGH | P2 |
-| Demand Dependency Management | MEDIUM | MEDIUM | P2 |
-| Agent Performance Analytics | MEDIUM | MEDIUM | P2 |
-| Custom Phase Templates | MEDIUM | MEDIUM | P2 |
-| Rollback for Agent Configs | LOW | LOW | P3 |
-| Advanced RBAC | MEDIUM | MEDIUM | P3 |
-| Multi-Model Support | LOW | HIGH | P3 |
-| API for External Integrations | MEDIUM | HIGH | P3 |
-| Agent Observability (Traces) | LOW | HIGH | P3 |
-
-**Priority key:**
-- P1: Must have for launch (MVP)
-- P2: Should have, add when possible (post-validation)
-- P3: Nice to have, future consideration (post-PMF)
-
-## Competitor Feature Analysis
-
-**Note:** Unable to perform current competitor analysis (WebSearch unavailable). Below based on training data knowledge of adjacent platforms. LOW confidence. Requires validation.
-
-| Feature Category | CI/CD Platforms (GitHub Actions, GitLab) | AI Code Tools (Cursor, Copilot Workspace) | Workflow Orchestrators (Temporal, Prefect) | Our Approach |
-|---------|--------------|--------------|--------------|--------------|
-| **Visual Pipeline** | YAML configs, limited visual. Status badges | Inline IDE, no separate pipeline view | DAG visualization, technical | Kanban board, business-friendly, stage-based |
-| **Agent Autonomy** | Scripted automation, not agentic | AI suggestions, human drives | Code-driven workflows, deterministic | AI agents drive entire pipeline, human gates at key points |
-| **Merge Conflict Handling** | Block on conflicts, manual resolution | No merge handling | Not applicable | 3-tier escalation: auto → AI resolves → human |
-| **Cost Tracking** | Compute minutes (infrastructure) | No cost visibility (flat subscription) | Infrastructure cost, not AI tokens | Token/cost per demand, project, phase |
-| **Concurrent Execution** | Unlimited parallel jobs (paid) | Single user session | Configurable parallelism | 3 concurrent demands per project (controlled) |
-| **Multi-Tenant** | Org/repo based | User-based | Self-hosted or single-tenant | Multi-tenant SaaS, project isolation |
-| **Human-in-Loop** | Manual approval gates | Human always in loop | Code-defined gates | Smart gates: agents escalate when stuck |
-| **Learning/Context** | No cross-run learning | Session-based context | No learning, deterministic | Cross-phase context propagation, feedback learning |
-
-**Differentiation Summary:**
-- **vs CI/CD:** We're agent-driven software creation, not script execution. Agents reason about requirements, not just run tests.
-- **vs AI Code Tools:** We orchestrate full pipeline (requirements → merge), not just code assistance within IDE.
-- **vs Workflow Orchestrators:** We're opinionated for software development, not general-purpose. AI agents, not code-defined tasks.
-
-## Phase-Specific Feature Mapping
-
-| Phase | Essential Features | Nice-to-Have Features |
-|-------|-------------------|----------------------|
-| **Inbox** | Queue management, prioritization, filtering | Demand templates, dependency detection |
-| **Discovery** | Agent execution logs, cost tracking, human validation gate | Cross-phase learning, smart requirements extraction |
-| **Planning** | Agent logs, cost tracking, context from Discovery | Predictive cost estimation, architecture pattern suggestions |
-| **Development** | Concurrent execution (3), Git integration, status tracking, logs | Branch automation, code quality gates, test generation |
-| **Testing** | Agent logs, test execution results, failure retry | Smart phase gating, coverage analysis, regression detection |
-| **Merge** | 3-tier escalation, conflict detection, Git integration | Branch cleanup, merge strategy optimization |
-| **Done** | Audit trail, metrics (time/cost), notification | Analytics dashboard, trend analysis, retrospective insights |
-
-## User Personas & Feature Relevance
-
-| Persona | Key Features | Why They Care |
-|---------|-------------|---------------|
-| **Engineering Manager** | Metrics dashboard, cost tracking, multi-project view | Budget control, team throughput visibility, resource allocation |
-| **Developer** | Agent execution logs, merge escalation, error retry | Understand what agents did, fix issues when agents stuck, code quality |
-| **Product Owner** | Task queue, execution status, demand dependency | Prioritize work, see progress, manage feature dependencies |
-| **Platform Admin** | Authentication, RBAC, multi-tenant isolation, audit trail | Security, compliance, user management, system health |
-| **Executive/Founder** | Cost per project, demands/week, time-to-market metrics | ROI on AI agents, business velocity, economic viability |
+---
 
 ## Sources
 
-**Note:** Research conducted without WebSearch access. Findings based on:
-- Training data (January 2025 cutoff, 6-18 months stale)
-- Project context analysis (provided in research request)
-- Domain expertise patterns from CI/CD, workflow orchestration, AI agent systems
-- Logical feature decomposition for stated use case
-
-**Confidence: MEDIUM**
-
-**Validation Required:**
-- Current market offerings in AI agent orchestration space (2026)
-- Feature expectations from actual users of similar platforms
-- Competitive landscape for AI DevOps platforms
-- Pricing/cost tracking norms in AI agent platforms
-
-**Recommended Next Steps:**
-1. Interview users of Cursor, GitHub Copilot Workspace, AI code generation tools
-2. Analyze competitors: Devin, Replit Agent, similar agent-driven dev platforms
-3. Validate complexity estimates with engineering team
-4. User test MVP feature set with target personas
+- [Claude Code headless mode documentation](https://code.claude.com/docs/en/headless) -- HIGH confidence
+- [Using Claude Code with Pro/Max plan](https://support.claude.com/en/articles/11145838-using-claude-code-with-your-pro-or-max-plan) -- HIGH confidence
+- [Claude Agent SDK OAuth demo](https://github.com/weidwonder/claude_agent_sdk_oauth_demo) -- MEDIUM confidence (community, not official)
+- [SDK vs CLI auth issue #5891](https://github.com/anthropics/claude-code/issues/5891) -- HIGH confidence (official repo)
+- [SDK OAuth token issue #6536](https://github.com/anthropics/claude-code/issues/6536) -- HIGH confidence (official repo)
+- [Anthropic third-party OAuth policy (Jan 2026)](https://jpcaparas.medium.com/claude-code-cripples-third-party-coding-agents-from-using-oauth-6548e9b49df3) -- MEDIUM confidence
+- [@fastify/websocket npm](https://www.npmjs.com/package/@fastify/websocket) -- HIGH confidence
+- [Fastify WebSocket guide (Better Stack)](https://betterstack.com/community/guides/scaling-nodejs/fastify-websockets/) -- HIGH confidence
+- [Fastify WebSocket broadcast patterns (GitHub issue #42)](https://github.com/fastify/fastify-websocket/issues/42) -- HIGH confidence
+- [grammY framework](https://grammy.dev/) -- HIGH confidence (official docs)
+- [grammY comparison with Telegraf](https://grammy.dev/resources/comparison) -- HIGH confidence
+- [grammY deployment types (webhook vs polling)](https://grammy.dev/guide/deployment-types) -- HIGH confidence
+- [shadcn/ui Sidebar component](https://ui.shadcn.com/docs/components/radix/sidebar) -- HIGH confidence
+- [shadcn/ui Sidebar blocks](https://ui.shadcn.com/blocks/sidebar) -- HIGH confidence
+- [Turborepo Docker guide](https://turborepo.dev/docs/guides/tools/docker) -- HIGH confidence
+- [pnpm Docker guide](https://pnpm.io/docker) -- HIGH confidence
+- [Next.js standalone output](https://nextjs.org/docs/app/getting-started/deploying) -- HIGH confidence
+- [Next.js Docker production patterns (2025)](https://github.com/kristiyan-velkov/nextjs-prod-dockerfile) -- MEDIUM confidence
 
 ---
-*Feature research for: AI Agent Orchestration Platform for Software Development*
-*Researched: 2026-02-11*
-*Confidence: MEDIUM (training data + context analysis, no current market validation)*
+
+*Feature research for: TechTeam Platform v1.1 -- UX Improvements and Production Readiness*
+*Researched: 2026-02-13*
+*Overall Confidence: HIGH (all features use well-established patterns with official documentation)*
