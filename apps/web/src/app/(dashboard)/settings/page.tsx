@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Save, Eye, EyeOff, CheckCircle, Key, Github } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Loader2, Save, Eye, EyeOff, CheckCircle, Key, Github, Terminal } from "lucide-react"
 import { api } from "@/lib/api"
 
 interface SettingsResponse {
@@ -16,6 +17,7 @@ interface SettingsResponse {
     anthropicApiKey: string | null
     hasGithubToken: boolean
     hasAnthropicApiKey: boolean
+    agentExecutionMode: "sdk" | "cli"
   }
 }
 
@@ -25,6 +27,7 @@ export default function SettingsPage() {
   const [anthropicApiKey, setAnthropicApiKey] = useState("")
   const [showGithub, setShowGithub] = useState(false)
   const [showAnthropic, setShowAnthropic] = useState(false)
+  const [executionMode, setExecutionMode] = useState<"sdk" | "cli">("sdk")
   const [saved, setSaved] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -33,12 +36,25 @@ export default function SettingsPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (body: { githubToken?: string; anthropicApiKey?: string }) =>
+    mutationFn: (body: { githubToken?: string; anthropicApiKey?: string; agentExecutionMode?: "sdk" | "cli" }) =>
       api.put<SettingsResponse>("/api/settings", body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] })
     },
   })
+
+  useEffect(() => {
+    if (data?.settings?.agentExecutionMode) {
+      setExecutionMode(data.settings.agentExecutionMode)
+    }
+  }, [data])
+
+  function saveExecutionMode(mode: "sdk" | "cli") {
+    setExecutionMode(mode)
+    mutation.mutate({ agentExecutionMode: mode })
+    setSaved("execution-mode")
+    setTimeout(() => setSaved(null), 3000)
+  }
 
   function saveGithubToken() {
     if (!githubToken.trim()) return
@@ -197,6 +213,52 @@ export default function SettingsPage() {
               Save
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Agent Execution Mode */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Terminal className="size-5" />
+            Agent Execution Mode
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Choose how AI agents execute. <strong>API Key</strong> uses the Anthropic SDK (pay per use).{" "}
+            <strong>Claude MAX</strong> uses the Claude CLI with your MAX subscription (unlimited).
+          </p>
+          <RadioGroup
+            value={executionMode}
+            onValueChange={(value: string) => saveExecutionMode(value as "sdk" | "cli")}
+            className="space-y-3"
+          >
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <RadioGroupItem value="sdk" id="mode-sdk" />
+              <Label htmlFor="mode-sdk" className="flex-1 cursor-pointer">
+                <div className="font-medium">API Key (SDK)</div>
+                <div className="text-sm text-muted-foreground">
+                  Uses Anthropic API key configured above. Pay per token usage.
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <RadioGroupItem value="cli" id="mode-cli" />
+              <Label htmlFor="mode-cli" className="flex-1 cursor-pointer">
+                <div className="font-medium">Claude MAX (CLI)</div>
+                <div className="text-sm text-muted-foreground">
+                  Uses Claude CLI subprocess. Requires Claude CLI installed and authenticated on the server.
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+          {saved === "execution-mode" && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle className="size-4" />
+              Execution mode saved
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

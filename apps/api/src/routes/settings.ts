@@ -12,12 +12,14 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
             anthropicApiKey: settings.anthropicApiKey ? "••••••••" + settings.anthropicApiKey.slice(-8) : null,
             hasGithubToken: !!settings.githubToken,
             hasAnthropicApiKey: !!settings.anthropicApiKey,
+            agentExecutionMode: settings.agentExecutionMode ?? "sdk",
           }
         : {
             githubToken: null,
             anthropicApiKey: null,
             hasGithubToken: false,
             hasAnthropicApiKey: false,
+            agentExecutionMode: "sdk",
           },
     }
   })
@@ -27,15 +29,17 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
     const body = request.body as {
       githubToken?: string | null
       anthropicApiKey?: string | null
+      agentExecutionMode?: "sdk" | "cli"
     }
 
-    if (!body || (body.githubToken === undefined && body.anthropicApiKey === undefined)) {
+    if (!body || (body.githubToken === undefined && body.anthropicApiKey === undefined && body.agentExecutionMode === undefined)) {
       return reply.status(400).send({ error: "At least one setting is required" })
     }
 
     const data: Record<string, string | null> = {}
     if (body.githubToken !== undefined) data.githubToken = body.githubToken
     if (body.anthropicApiKey !== undefined) data.anthropicApiKey = body.anthropicApiKey
+    if (body.agentExecutionMode !== undefined) data.agentExecutionMode = body.agentExecutionMode
 
     const settings = await (request.prisma as any).tenantSettings.upsert({
       where: {
@@ -51,6 +55,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         anthropicApiKey: settings.anthropicApiKey ? "••••••••" + settings.anthropicApiKey.slice(-8) : null,
         hasGithubToken: !!settings.githubToken,
         hasAnthropicApiKey: !!settings.anthropicApiKey,
+        agentExecutionMode: settings.agentExecutionMode ?? "sdk",
       },
     }
   })
