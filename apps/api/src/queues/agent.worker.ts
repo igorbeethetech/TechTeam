@@ -4,6 +4,14 @@ import { createWorkerConnection } from "../lib/redis.js"
 import { config } from "../lib/config.js"
 import { forTenant } from "@techteam/database"
 import type { AgentJobData, AgentJobResult } from "./agent.queue.js"
+import { publishWsEvent } from "../lib/ws-events.js"
+import type { WsEvent } from "@techteam/shared"
+
+// Fire-and-forget wrapper: ensures publishWsEvent failures never block or crash the worker.
+// publishWsEvent already has try/catch internally, but this provides double safety.
+async function emitEvent(event: WsEvent): Promise<void> {
+  try { await publishWsEvent(event) } catch { /* never block worker */ }
+}
 
 // Reusable Redis client for concurrency operations (dev slot semaphore)
 let concurrencyRedis: IORedis | null = null
@@ -94,6 +102,7 @@ export function createAgentWorker() {
           attempt,
         } as any,
       })
+      await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
       try {
         // Dynamically import the correct agent function based on phase
@@ -166,6 +175,7 @@ export function createAgentWorker() {
             durationMs: agentResult.durationMs,
           },
         })
+        await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
         // Update demand agentStatus and accumulate token/cost totals
         await prisma.demand.update({
@@ -178,6 +188,7 @@ export function createAgentWorker() {
             totalCostUsd: { increment: agentResult.costUsd },
           },
         })
+        await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
 
         // Handle stage advancement and store agent output on demand
         if (phase === "discovery") {
@@ -192,6 +203,7 @@ export function createAgentWorker() {
               complexity: (discoveryOutput.complexity as any) ?? null,
             },
           })
+          await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
 
           if (agentResult.hasAmbiguities) {
             // Keep in discovery, set paused for human clarification
@@ -199,12 +211,14 @@ export function createAgentWorker() {
               where: { id: demandId },
               data: { agentStatus: "paused" },
             })
+            await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
           } else {
             // Advance to planning and enqueue planning job
             await prisma.demand.update({
               where: { id: demandId },
               data: { stage: "planning", agentStatus: "queued" },
             })
+            await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
             const { agentQueue } = await import("./agent.queue.js")
             await agentQueue.add("run-agent", {
               demandId,
@@ -223,6 +237,8 @@ export function createAgentWorker() {
               agentStatus: "queued",
             },
           })
+          await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
+          await emitEvent({ type: "demand:updated", tenantId, payload: { demandId, projectId } })
           const { agentQueue } = await import("./agent.queue.js")
           await agentQueue.add("run-agent", {
             demandId,
@@ -250,12 +266,14 @@ export function createAgentWorker() {
             error: errorMessage,
           },
         })
+        await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
         // Set demand agentStatus to failed
         await prisma.demand.update({
           where: { id: demandId },
           data: { agentStatus: "failed" },
         })
+        await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
 
         // NOTIF-01: Notify on agent failure
         try {
@@ -273,6 +291,7 @@ export function createAgentWorker() {
                 projectId: failedDemand.projectId,
               },
             })
+            await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
           }
         } catch (notifErr) {
           // Never let notification creation mask the original error (research pitfall 4)
@@ -352,6 +371,7 @@ async function handleDevelopmentPhase(ctx: {
       where: { id: demandId },
       data: { agentStatus: "queued" },
     })
+    await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
 
     // Delete the AgentRun we just created (it's not a real run)
     await prisma.agentRun.delete({
@@ -457,6 +477,7 @@ async function handleDevelopmentPhase(ctx: {
           durationMs: agentResult.durationMs,
         },
       })
+      await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
       // Accumulate token/cost totals
       await prisma.demand.update({
@@ -499,6 +520,7 @@ async function handleDevelopmentPhase(ctx: {
         where: { id: demandId },
         data: { stage: "testing", agentStatus: "queued" },
       })
+      await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
       const { agentQueue } = await import("./agent.queue.js")
       await agentQueue.add("run-agent", {
         demandId,
@@ -581,6 +603,7 @@ async function handleTestingPhase(ctx: {
       durationMs: testResult.durationMs,
     },
   })
+  await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
   // Accumulate token/cost totals
   await prisma.demand.update({
@@ -600,6 +623,7 @@ async function handleTestingPhase(ctx: {
       where: { id: demandId },
       data: { stage: "merge", agentStatus: "queued" },
     })
+    await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
     const { mergeQueue } = await import("./merge.queue.js")
     await mergeQueue.add("merge-demand", {
       demandId,
@@ -623,6 +647,7 @@ async function handleTestingPhase(ctx: {
           testingFeedback: testResult.output as any,
         },
       })
+      await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
       console.log(
         `[agent-worker] Demand paused after ${MAX_REJECTION_CYCLES} rejection cycles: demandId=${demandId}`
       )
@@ -637,6 +662,7 @@ async function handleTestingPhase(ctx: {
           testingFeedback: testResult.output as any,
         },
       })
+      await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
       const { agentQueue } = await import("./agent.queue.js")
       await agentQueue.add("run-agent", {
         demandId,
