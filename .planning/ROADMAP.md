@@ -139,6 +139,11 @@ Plans:
   3. Sidebar collapse/expand state persists across page navigations (user does not lose their preference)
   4. User can navigate to a dedicated "Boards" page, see all projects listed, select one, and land on that project's Kanban board
   5. User can click a demand card's title text on the Kanban board to navigate to the demand detail page, while drag-and-drop still works via a separate drag handle area
+**Plans:** 2 plans across 2 waves
+
+Plans:
+- [ ] 07-01-PLAN.md -- Install shadcn sidebar, create AppSidebar component, restructure dashboard layout to replace header nav
+- [ ] 07-02-PLAN.md -- Boards API endpoint with demand counts, Boards page UI, Kanban card drag handle refactor with click-to-navigate
 
 ### Phase 8: WebSocket Real-Time
 **Goal**: The platform updates in real-time without polling -- board changes, agent status, and notifications appear instantly via WebSocket
@@ -196,8 +201,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 4. Development and Testing | 3/3 | Complete | 2026-02-12 |
 | 5. Merge and Concurrency | 3/3 | Complete | 2026-02-12 |
 | 6. Metrics and Notifications | 2/2 | Complete | 2026-02-12 |
-| 7. Sidebar Navigation and Boards | 0/? | Pending | — |
-| 8. WebSocket Real-Time | 0/? | Pending | — |
-| 9. Claude MAX Integration | 0/? | Pending | — |
-| 10. Docker Production Deploy | 0/? | Pending | — |
-| 11. Pipeline E2E Validation | 0/? | Pending | — |
+| 7. Sidebar Navigation and Boards | 0/2 | Planned | -- |
+| 8. WebSocket Real-Time | 0/? | Pending | -- |
+| 9. Claude MAX Integration | 0/? | Pending | -- |
+| 10. Docker Production Deploy | 0/? | Pending | -- |
+| 11. Pipeline E2E Validation | 0/? | Pending | -- |
