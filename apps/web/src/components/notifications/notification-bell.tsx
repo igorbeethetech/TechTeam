@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Bell } from "lucide-react"
 import { api } from "@/lib/api"
+import { useWsStatus } from "@/hooks/use-websocket"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -14,12 +15,13 @@ import { NotificationPanel } from "./notification-panel"
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
+  const wsStatus = useWsStatus()
 
   const { data } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () =>
       api.get<{ count: number }>("/api/notifications/unread-count"),
-    refetchInterval: 10_000,
+    refetchInterval: wsStatus === "connected" ? false : 10_000,
   })
 
   const count = data?.count ?? 0

@@ -9,6 +9,7 @@ import {
   type DemandPriority,
 } from "@techteam/shared"
 import { api } from "@/lib/api"
+import { useWsStatus } from "@/hooks/use-websocket"
 import {
   Kanban,
   KanbanBoard,
@@ -45,13 +46,14 @@ function groupByStage(demands: DemandItem[]): BoardColumns {
 
 export function KanbanBoardView({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient()
+  const wsStatus = useWsStatus()
 
-  // Fetch demands with 5-second polling (BOARD-05)
+  // Fetch demands -- WS events invalidate when connected, poll as fallback
   const { data: demandsData } = useQuery({
     queryKey: ["demands", projectId],
     queryFn: () =>
       api.get<DemandsResponse>(`/api/demands?projectId=${projectId}`),
-    refetchInterval: 5000,
+    refetchInterval: wsStatus === "connected" ? false : 5000,
     refetchIntervalInBackground: false,
   })
 

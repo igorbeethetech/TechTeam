@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/lib/api"
+import { useWsStatus } from "@/hooks/use-websocket"
 import { BoardHeader } from "@/components/board/board-header"
 import { KanbanBoardView } from "@/components/board/kanban-board"
 import { DemandForm } from "@/components/demands/demand-form"
@@ -33,6 +34,7 @@ export default function BoardPage({
 }) {
   const { projectId } = use(params)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const wsStatus = useWsStatus()
 
   const {
     data: projectData,
@@ -47,7 +49,7 @@ export default function BoardPage({
     queryKey: ["demands", projectId],
     queryFn: () =>
       api.get<DemandsResponse>(`/api/demands?projectId=${projectId}`),
-    refetchInterval: 5000,
+    refetchInterval: wsStatus === "connected" ? false : 5000,
     refetchIntervalInBackground: false,
   })
 

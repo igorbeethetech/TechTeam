@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { useWsStatus } from "@/hooks/use-websocket"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Zap, DollarSign, AlertCircle } from "lucide-react"
 import type { AgentRun } from "@techteam/shared"
@@ -56,11 +57,13 @@ interface AgentRunsResponse {
 }
 
 export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
+  const wsStatus = useWsStatus()
+
   const { data, isLoading } = useQuery({
     queryKey: ["agent-runs", demandId],
     queryFn: () =>
       api.get<AgentRunsResponse>(`/api/agent-runs?demandId=${demandId}`),
-    refetchInterval: isAgentActive ? 5000 : false,
+    refetchInterval: wsStatus === "connected" ? false : (isAgentActive ? 5000 : false),
   })
 
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())

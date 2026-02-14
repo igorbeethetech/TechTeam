@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { api } from "@/lib/api"
+import { useWsStatus } from "@/hooks/use-websocket"
 import { DemandDetail } from "@/components/demands/demand-detail"
 import { Button } from "@/components/ui/button"
 import type { Demand } from "@techteam/shared"
@@ -20,15 +21,18 @@ export default function DemandDetailPage({
   params: Promise<{ demandId: string }>
 }) {
   const { demandId } = use(params)
+  const wsStatus = useWsStatus()
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["demand", demandId],
     queryFn: () => api.get<DemandResponse>(`/api/demands/${demandId}`),
     staleTime: 0,
-    refetchInterval: (query) => {
-      const status = query.state.data?.demand?.agentStatus
-      return status === "queued" || status === "running" ? 5000 : false
-    },
+    refetchInterval: wsStatus === "connected"
+      ? false
+      : (query) => {
+          const status = query.state.data?.demand?.agentStatus
+          return status === "queued" || status === "running" ? 5000 : false
+        },
   })
 
   const isAgentActive =
