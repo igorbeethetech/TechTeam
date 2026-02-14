@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ExternalLink, Pencil, Archive, ArchiveRestore, GitBranch, Users } from "lucide-react"
+import { ExternalLink, Pencil, Archive, ArchiveRestore, GitBranch, Users, Kanban } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -65,6 +65,14 @@ export function ProjectCard({ project, onArchive, onUnarchive }: ProjectCardProp
         </div>
 
         <div className="mt-auto flex items-center gap-2 pt-2">
+          {!isArchived && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/projects/${project.id}/board`}>
+                <Kanban className="size-3.5" />
+                Board
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <Link href={`/projects/${project.id}/edit`}>
               <Pencil className="size-3.5" />

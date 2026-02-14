@@ -45,6 +45,51 @@ export default async function demandRoutes(fastify: FastifyInstance) {
     return { demand }
   })
 
+  // POST /:id/clarify - Submit clarification answers for paused demand
+  fastify.post("/:id/clarify", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    const { answers } = request.body as { answers: { question: string; answer: string }[] }
+
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+      return reply.status(400).send({ error: "answers array is required" })
+    }
+
+    // Verify demand exists and is paused
+    const demand = await request.prisma.demand.findUnique({ where: { id } })
+    if (!demand) {
+      return reply.status(404).send({ error: "Demand not found" })
+    }
+    if (demand.agentStatus !== "paused") {
+      return reply.status(400).send({ error: "Demand is not paused" })
+    }
+
+    // Append clarifications to existing requirements
+    const requirements = demand.requirements as Record<string, unknown> | null
+    const updatedRequirements = {
+      ...requirements,
+      clarifications: answers,
+    }
+
+    // Update demand: store clarifications, re-queue discovery
+    await request.prisma.demand.update({
+      where: { id },
+      data: {
+        requirements: updatedRequirements as any,
+        agentStatus: "queued",
+      },
+    })
+
+    // Re-enqueue discovery job with clarifications
+    await agentQueue.add("run-agent", {
+      demandId: id,
+      tenantId: request.session!.session.activeOrganizationId!,
+      projectId: demand.projectId,
+      phase: "discovery",
+    })
+
+    return { success: true }
+  })
+
   // PATCH /:id/stage - Update demand stage (drag-and-drop)
   fastify.patch("/:id/stage", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
     const { id } = request.params

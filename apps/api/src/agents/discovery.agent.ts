@@ -10,7 +10,7 @@ import { prisma } from "@techteam/database"
  * can produce accurate requirements analysis.
  */
 function buildDiscoveryPrompt(
-  demand: { title: string; description: string | null },
+  demand: { title: string; description: string | null; requirements?: unknown },
   project: { name: string; techStack: string; repoUrl: string }
 ): string {
   const systemContext = [
@@ -20,7 +20,7 @@ function buildDiscoveryPrompt(
     "If any part of the demand is ambiguous, unclear, or missing critical information, add it to the ambiguities array.",
   ].join(" ")
 
-  const userPrompt = [
+  const userPromptParts = [
     `## Project`,
     `- **Name:** ${project.name}`,
     `- **Tech Stack:** ${project.techStack}`,
@@ -29,17 +29,30 @@ function buildDiscoveryPrompt(
     `## Demand`,
     `- **Title:** ${demand.title}`,
     `- **Description:** ${demand.description ?? "(no description provided)"}`,
-    ``,
-    `## Instructions`,
-    `Analyze this demand and produce:`,
-    `1. Functional requirements with acceptance criteria`,
-    `2. Non-functional requirements by category (performance, security, usability, reliability, maintainability)`,
-    `3. Complexity estimate (S=trivial, M=few days, L=week+, XL=major effort)`,
-    `4. Any ambiguities that need human clarification before development can begin`,
-    `5. A brief summary`,
-  ].join("\n")
+  ]
 
-  return `${systemContext}\n\n${userPrompt}`
+  // Include previous clarifications if available (re-run after human answered ambiguities)
+  const reqs = demand.requirements as { clarifications?: { question: string; answer: string }[] } | null
+  if (reqs?.clarifications && reqs.clarifications.length > 0) {
+    userPromptParts.push(``)
+    userPromptParts.push(`## Clarifications Provided by User`)
+    userPromptParts.push(`The user has answered the following questions from a previous analysis. Use these answers to resolve ambiguities and produce complete requirements. Only add new ambiguities if there are genuinely new unclear points NOT covered by these answers.`)
+    for (const c of reqs.clarifications) {
+      userPromptParts.push(`- **Q:** ${c.question}`)
+      userPromptParts.push(`  **A:** ${c.answer}`)
+    }
+  }
+
+  userPromptParts.push(``)
+  userPromptParts.push(`## Instructions`)
+  userPromptParts.push(`Analyze this demand and produce:`)
+  userPromptParts.push(`1. Functional requirements with acceptance criteria`)
+  userPromptParts.push(`2. Non-functional requirements by category (performance, security, usability, reliability, maintainability)`)
+  userPromptParts.push(`3. Complexity estimate (S=trivial, M=few days, L=week+, XL=major effort)`)
+  userPromptParts.push(`4. Any ambiguities that need human clarification before development can begin`)
+  userPromptParts.push(`5. A brief summary`)
+
+  return `${systemContext}\n\n${userPromptParts.join("\n")}`
 }
 
 export interface DiscoveryAgentParams {

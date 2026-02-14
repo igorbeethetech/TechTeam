@@ -1,11 +1,28 @@
 import { Octokit } from "@octokit/rest"
 import { config } from "./config.js"
+import { prisma } from "@techteam/database"
 
-function getOctokit(): Octokit {
-  if (!config.GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is required for GitHub operations. Set it in .env")
+function getOctokit(token?: string): Octokit {
+  const authToken = token || config.GITHUB_TOKEN
+  if (!authToken) {
+    throw new Error("GitHub token is required. Configure it in Settings or set GITHUB_TOKEN in .env")
   }
-  return new Octokit({ auth: config.GITHUB_TOKEN })
+  return new Octokit({ auth: authToken })
+}
+
+/**
+ * Fetch the GitHub token for a tenant from TenantSettings.
+ * Falls back to .env GITHUB_TOKEN if not configured per-tenant.
+ */
+export async function getGithubTokenForTenant(tenantId: string): Promise<string> {
+  const settings = await prisma.tenantSettings.findUnique({
+    where: { tenantId },
+  })
+  const token = settings?.githubToken || config.GITHUB_TOKEN
+  if (!token) {
+    throw new Error("GitHub token not configured. Go to Settings to add your GitHub Personal Access Token.")
+  }
+  return token
 }
 
 export function extractOwnerRepo(repoUrl: string): { owner: string; repo: string } {
@@ -30,8 +47,8 @@ export interface CreatePrParams {
   base: string // default branch
 }
 
-export async function createPullRequest(params: CreatePrParams): Promise<string> {
-  const octokit = getOctokit()
+export async function createPullRequest(params: CreatePrParams & { token?: string }): Promise<string> {
+  const octokit = getOctokit(params.token)
   const { owner, repo } = extractOwnerRepo(params.repoUrl)
 
   const { data: pr } = await octokit.rest.pulls.create({
@@ -54,8 +71,9 @@ export async function mergePullRequest(params: {
   prNumber: number
   commitTitle: string
   mergeMethod?: "merge" | "squash" | "rebase"
+  token?: string
 }): Promise<{ sha: string }> {
-  const octokit = getOctokit()
+  const octokit = getOctokit(params.token)
   const { owner, repo } = extractOwnerRepo(params.repoUrl)
 
   const { data } = await octokit.rest.pulls.merge({
@@ -75,8 +93,9 @@ export async function mergePullRequest(params: {
 export async function closePullRequest(params: {
   repoUrl: string
   prNumber: number
+  token?: string
 }): Promise<void> {
-  const octokit = getOctokit()
+  const octokit = getOctokit(params.token)
   const { owner, repo } = extractOwnerRepo(params.repoUrl)
 
   await octokit.rest.pulls.update({

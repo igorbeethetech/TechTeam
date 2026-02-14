@@ -379,7 +379,10 @@ async function handleDevelopmentPhase(ctx: {
       getWorktreePath,
       createWorktree,
     } = await import("../lib/git.js")
-    const { createPullRequest } = await import("../lib/github.js")
+    const { createPullRequest, getGithubTokenForTenant } = await import("../lib/github.js")
+
+    // Fetch tenant's GitHub token for push and PR operations
+    const githubToken = await getGithubTokenForTenant(tenantId)
 
     // 1. Validate repoPath exists and is a git repo
     const isValid = await validateGitRepo(project.repoPath)
@@ -482,6 +485,7 @@ async function handleDevelopmentPhase(ctx: {
           body: buildPrBody(demand, agentResult.output),
           head: branchName,
           base: project.defaultBranch,
+          token: githubToken,
         })
         await prisma.demand.update({
           where: { id: demandId },

@@ -116,6 +116,19 @@ model invitation {
   @@index([email])
 }
 
+// === TENANT SETTINGS ===
+
+model TenantSettings {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  githubToken     String?
+  anthropicApiKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
 // === CUSTOM MODELS ===
 
 model Project {

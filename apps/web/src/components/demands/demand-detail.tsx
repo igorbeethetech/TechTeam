@@ -168,6 +168,8 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
           </h2>
           <RequirementsView
             requirements={demand.requirements as DiscoveryOutput}
+            demandId={demand.id}
+            isPaused={demand.agentStatus === "paused"}
           />
         </div>
       ) : null}

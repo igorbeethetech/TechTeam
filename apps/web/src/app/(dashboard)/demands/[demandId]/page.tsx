@@ -24,6 +24,7 @@ export default function DemandDetailPage({
   const { data, isLoading, error } = useQuery({
     queryKey: ["demand", demandId],
     queryFn: () => api.get<DemandResponse>(`/api/demands/${demandId}`),
+    staleTime: 0,
     refetchInterval: (query) => {
       const status = query.state.data?.demand?.agentStatus
       return status === "queued" || status === "running" ? 5000 : false

@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge"
 import type { DiscoveryOutput } from "@techteam/shared"
 import { AlertTriangle } from "lucide-react"
+import { ClarificationForm } from "./clarification-form"
 
 const NFR_CATEGORY_COLORS: Record<string, string> = {
   performance: "bg-blue-100 text-blue-700 hover:bg-blue-100",
@@ -21,9 +22,11 @@ const COMPLEXITY_LABELS: Record<string, string> = {
 
 interface RequirementsViewProps {
   requirements: DiscoveryOutput
+  demandId?: string
+  isPaused?: boolean
 }
 
-export function RequirementsView({ requirements }: RequirementsViewProps) {
+export function RequirementsView({ requirements, demandId, isPaused }: RequirementsViewProps) {
   return (
     <div className="space-y-6">
       {/* Summary */}
@@ -111,19 +114,28 @@ export function RequirementsView({ requirements }: RequirementsViewProps) {
             <div className="mb-3 flex items-center gap-2 text-amber-700 dark:text-amber-400">
               <AlertTriangle className="size-4" />
               <span className="text-sm font-medium">
-                This demand is paused until these questions are resolved.
+                {isPaused
+                  ? "Please answer these questions to resume the agent pipeline."
+                  : "These ambiguities were detected during discovery."}
               </span>
             </div>
-            <div className="space-y-3">
-              {requirements.ambiguities.map((ambiguity, index) => (
-                <div key={index} className="space-y-1">
-                  <p className="text-sm font-medium">{ambiguity.question}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ambiguity.context}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {isPaused && demandId ? (
+              <ClarificationForm
+                demandId={demandId}
+                ambiguities={requirements.ambiguities}
+              />
+            ) : (
+              <div className="space-y-3">
+                {requirements.ambiguities.map((ambiguity, index) => (
+                  <div key={index} className="space-y-1">
+                    <p className="text-sm font-medium">{ambiguity.question}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ambiguity.context}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
