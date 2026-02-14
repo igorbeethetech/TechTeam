@@ -159,7 +159,7 @@ export function KanbanBoardView({ projectId }: { projectId: string }) {
                 </div>
                 <div className="flex flex-col gap-2 p-2 min-h-[120px]">
                   {(columns[stage] ?? []).map((demand) => (
-                    <KanbanItem key={demand.id} value={demand.id} asHandle>
+                    <KanbanItem key={demand.id} value={demand.id}>
                       <DemandCard demand={demand} />
                     </KanbanItem>
                   ))}

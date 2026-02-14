@@ -1,8 +1,9 @@
 "use client"
 
-import Link from "next/link"
-import { ExternalLink } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { GripVertical } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useKanbanItemHandle } from "@/components/ui/kanban"
 import type { DemandPriority } from "@techteam/shared"
 
 const PRIORITY_COLORS: Record<DemandPriority, string> = {
@@ -22,28 +23,46 @@ interface DemandCardProps {
 }
 
 export function DemandCard({ demand }: DemandCardProps) {
+  const router = useRouter()
+  const { listeners, attributes, setActivatorNodeRef, isDragging } = useKanbanItemHandle()
+
+  function handleCardClick() {
+    // Don't navigate if we just finished a drag
+    if (isDragging) return
+    router.push(`/demands/${demand.id}`)
+  }
+
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing">
-      <p className="text-sm font-medium line-clamp-2">{demand.title}</p>
-      <div className="mt-2 flex items-center justify-between">
-        <Badge className={PRIORITY_COLORS[demand.priority] ?? PRIORITY_COLORS.medium}>
-          {demand.priority}
-        </Badge>
-        <Link
-          href={`/demands/${demand.id}`}
-          className="text-muted-foreground hover:text-primary transition-colors"
+    <div
+      className="rounded-lg border bg-card p-3 shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="flex items-start gap-2">
+        {/* Drag handle -- only this element is draggable */}
+        <button
+          ref={setActivatorNodeRef}
+          {...listeners}
+          {...attributes}
+          className="mt-0.5 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
           onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
         >
-          <ExternalLink className="size-3.5" />
-          <span className="sr-only">View details</span>
-        </Link>
+          <GripVertical className="size-4" />
+        </button>
+        {/* Card content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium line-clamp-2">{demand.title}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <Badge className={PRIORITY_COLORS[demand.priority] ?? PRIORITY_COLORS.medium}>
+              {demand.priority}
+            </Badge>
+            {demand.totalCostUsd > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ${demand.totalCostUsd.toFixed(2)}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-      {demand.totalCostUsd > 0 && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          ${demand.totalCostUsd.toFixed(2)}
-        </p>
-      )}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -74,6 +75,12 @@ function Kanban<T extends { id: UniqueIdentifier }>({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300,
+        tolerance: 5,
+      },
     }),
     useSensor(KeyboardSensor)
   )
@@ -249,8 +256,24 @@ function KanbanColumn({
 }
 
 // =========================================================
-// KanbanItem
+// KanbanItem + drag handle context
 // =========================================================
+
+const KanbanItemContext = React.createContext<{
+  listeners: ReturnType<typeof useSortable>["listeners"]
+  attributes: ReturnType<typeof useSortable>["attributes"]
+  setActivatorNodeRef: ReturnType<typeof useSortable>["setActivatorNodeRef"]
+  isDragging: boolean
+}>({
+  listeners: undefined,
+  attributes: {} as ReturnType<typeof useSortable>["attributes"],
+  setActivatorNodeRef: () => {},
+  isDragging: false,
+})
+
+function useKanbanItemHandle() {
+  return React.useContext(KanbanItemContext)
+}
 
 interface KanbanItemProps {
   value: UniqueIdentifier
@@ -271,6 +294,7 @@ function KanbanItem({
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -287,14 +311,18 @@ function KanbanItem({
   const Comp = asChild ? Slot : "div"
 
   return (
-    <Comp
-      ref={setNodeRef}
-      style={style}
-      className={cn(className)}
-      {...dragProps}
+    <KanbanItemContext.Provider
+      value={{ listeners, attributes, setActivatorNodeRef, isDragging }}
     >
-      {children}
-    </Comp>
+      <Comp
+        ref={setNodeRef}
+        style={style}
+        className={cn(className)}
+        {...dragProps}
+      >
+        {children}
+      </Comp>
+    </KanbanItemContext.Provider>
   )
 }
 
@@ -328,4 +356,5 @@ export {
   KanbanItem,
   KanbanOverlay,
   useKanbanContext,
+  useKanbanItemHandle,
 }
