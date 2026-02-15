@@ -187,6 +187,12 @@ Plans:
   3. All configuration (database URL, Redis URL, API keys, domain) is managed via a single .env file
   4. Worker container can clone repositories and execute Git operations (git is available and volume mounts or built-in tools work correctly)
   5. Both API and web containers use multi-stage builds with turbo prune, resulting in minimal production images (no dev dependencies, no source maps)
+**Plans:** 3 plans across 2 waves
+
+Plans:
+- [ ] 10-01-PLAN.md -- Relocate worker.ts into src/, create API Dockerfile (3-stage turbo prune), migration entrypoint script
+- [ ] 10-02-PLAN.md -- Update next.config.ts for standalone output, create Web Dockerfile (3-stage turbo prune)
+- [ ] 10-03-PLAN.md -- Production docker-compose.prod.yml, .env.example, .dockerignore, full stack build and verification
 
 ### Phase 11: Pipeline E2E Validation
 **Goal**: A demand flows through the complete pipeline from Inbox to Done on a real repository, proving the entire system works end-to-end
@@ -215,5 +221,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Sidebar Navigation and Boards | 2/2 | Complete | 2026-02-14 |
 | 8. WebSocket Real-Time | 3/3 | Complete | 2026-02-14 |
 | 9. Claude MAX Integration | 2/2 | Complete | 2026-02-14 |
-| 10. Docker Production Deploy | 0/? | Pending | -- |
+| 10. Docker Production Deploy | 0/3 | Pending | -- |
 | 11. Pipeline E2E Validation | 0/? | Pending | -- |
