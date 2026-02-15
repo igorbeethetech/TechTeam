@@ -24,6 +24,7 @@
     "fastify-plugin": "^5.1.0",
     "ioredis": "^5.9.2",
     "simple-git": "^3.30.0",
+    "ws": "^8.19.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.25.1"
   },

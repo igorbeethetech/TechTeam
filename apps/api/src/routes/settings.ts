@@ -46,7 +46,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         tenantId: request.session!.session.activeOrganizationId!,
       },
       update: data,
-      create: data,
+      create: { ...data, tenantId: request.session!.session.activeOrganizationId! },
     })
 
     return {
