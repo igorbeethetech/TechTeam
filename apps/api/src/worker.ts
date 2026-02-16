@@ -2,9 +2,9 @@
 // Runs separately from the API server to process agent jobs
 
 // Import config first to trigger dotenv loading
-import "./src/lib/config.js"
-import { createAgentWorker } from "./src/queues/agent.worker.js"
-import { createMergeWorker } from "./src/queues/merge.worker.js"
+import "./lib/config.js"
+import { createAgentWorker } from "./queues/agent.worker.js"
+import { createMergeWorker } from "./queues/merge.worker.js"
 
 const agentWorker = createAgentWorker()
 const mergeWorker = createMergeWorker()
