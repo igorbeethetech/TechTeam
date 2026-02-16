@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 10 - Docker Deploy
-Plan: 1 of 3 complete
-Status: Plan 10-01 complete -- API Dockerfile + worker build fix
-Last activity: 2026-02-16 -- Plan 10-01 completed (API Dockerfile & worker build fix)
+Plan: 2 of 3 complete
+Status: Plan 10-02 complete -- Web Dockerfile with standalone output
+Last activity: 2026-02-16 -- Plan 10-02 completed (Web Dockerfile & next.config standalone)
 
 Progress: [###################███████████] 82% (9/11 phases complete)
 
@@ -44,7 +44,7 @@ v1.1: [██████████████████░░░░░░�
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
 | 08-websocket-realtime | 3/3 | 11min | 4min |
 | 09-claude-max | 2/2 | 8min | 4min |
-| 10-docker-deploy | 1/3 | 2min | 2min |
+| 10-docker-deploy | 2/3 | 6min | 3min |
 | 11-pipeline-e2e | — | — | — |
 
 ## Accumulated Context
@@ -91,6 +91,9 @@ Recent decisions affecting current work:
 - [10-01]: Relocated worker.ts into src/ instead of modifying tsconfig -- simplest approach, no config changes needed
 - [10-01]: Frozen-lockfile with pnpm install fallback in Dockerfile -- handles turbo prune + pnpm 10 compatibility
 - [10-01]: Entrypoint script uses prisma migrate deploy (not dev) -- production-safe migrations only
+- [10-02]: frozen-lockfile fallback in Web Dockerfile -- pnpm install --frozen-lockfile || pnpm install for turbo prune compatibility
+- [10-02]: No public/ COPY in Web Dockerfile runner -- apps/web/public does not exist
+- [10-02]: import.meta.dirname for outputFileTracingRoot -- ESM-compatible Node 22+ path resolution
 
 ### Pending Todos
 
@@ -101,11 +104,11 @@ None yet.
 - [Research]: Claude CLI subprocess may have ENOENT spawn errors in Docker containers due to PATH inheritance issues -- needs validation during Phase 10
 - [Research]: @fastify/websocket auth on upgrade -- exact auth decorator behavior during HTTP upgrade handshake needs testing during Phase 8
 - [Research]: Prisma binary targets for Alpine Docker -- may need explicit binaryTargets in schema.prisma for Alpine containers during Phase 10
-- [Research]: Next.js standalone + monorepo -- workspace:* resolution in standalone mode needs verification during Phase 10
+- [Resolved]: Next.js standalone + monorepo -- addressed by outputFileTracingRoot in next.config.ts (10-02); full Docker build verification in 10-03
 
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Completed 10-01-PLAN.md (API Dockerfile & worker build fix)
-Resume file: .planning/phases/10-docker-deploy/10-01-SUMMARY.md
-Next action: Execute Plan 10-02 (Web Dockerfile)
+Stopped at: Completed 10-02-PLAN.md (Web Dockerfile & next.config standalone)
+Resume file: .planning/phases/10-docker-deploy/10-02-SUMMARY.md
+Next action: Execute Plan 10-03 (docker-compose.prod.yml & env template)
