@@ -204,6 +204,11 @@ Plans:
   3. Testing agent reviews the PR and produces a clear approval or rejection with rationale
   4. An approved PR is merged automatically into the main branch via the merge queue
   5. If the testing agent rejects the PR, the demand returns to Development, the agent addresses the feedback, and the cycle repeats (up to 3 times) before escalating
+**Plans:** 2 plans across 2 waves
+
+Plans:
+- [ ] 11-01-PLAN.md -- Fix git push authentication blocker: token injection in Development handler and Merge worker
+- [ ] 11-02-PLAN.md -- Create test repository, run full pipeline E2E, validate all 5 PIPE requirements
 
 ## Progress
 
