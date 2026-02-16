@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Milestone v1.1 -- Phase 9 complete, next Phase 10: Docker Deploy
+**Current focus:** Milestone v1.1 -- Phase 10 in progress: Docker Deploy
 
 ## Current Position
 
-Phase: 9 - Claude MAX
-Plan: 2 of 2 complete
-Status: Phase 09 complete -- all agents routed through execution mode toggle
-Last activity: 2026-02-14 -- Plan 09-02 completed (agent wiring + settings toggle)
+Phase: 10 - Docker Deploy
+Plan: 1 of 3 complete
+Status: Plan 10-01 complete -- API Dockerfile + worker build fix
+Last activity: 2026-02-16 -- Plan 10-01 completed (API Dockerfile & worker build fix)
 
 Progress: [###################███████████] 82% (9/11 phases complete)
 
@@ -44,7 +44,7 @@ v1.1: [██████████████████░░░░░░�
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
 | 08-websocket-realtime | 3/3 | 11min | 4min |
 | 09-claude-max | 2/2 | 8min | 4min |
-| 10-docker-deploy | — | — | — |
+| 10-docker-deploy | 1/3 | 2min | 2min |
 | 11-pipeline-e2e | — | — | — |
 
 ## Accumulated Context
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [09-02]: All 5 agents use executeAgentAuto(tenantId, params) as single dispatch entry point
 - [09-02]: Execution mode toggle saves immediately on radio change -- no separate Save button
 - [09-02]: RadioGroup created manually following project's radix-ui umbrella import pattern
+- [10-01]: Relocated worker.ts into src/ instead of modifying tsconfig -- simplest approach, no config changes needed
+- [10-01]: Frozen-lockfile with pnpm install fallback in Dockerfile -- handles turbo prune + pnpm 10 compatibility
+- [10-01]: Entrypoint script uses prisma migrate deploy (not dev) -- production-safe migrations only
 
 ### Pending Todos
 
@@ -102,7 +105,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-14
-Stopped at: Completed 09-02-PLAN.md (agent wiring + settings toggle)
-Resume file: .planning/phases/09-claude-max/09-02-SUMMARY.md
-Next action: Execute Phase 10 (Docker Deploy)
+Last session: 2026-02-16
+Stopped at: Completed 10-01-PLAN.md (API Dockerfile & worker build fix)
+Resume file: .planning/phases/10-docker-deploy/10-01-SUMMARY.md
+Next action: Execute Plan 10-02 (Web Dockerfile)
