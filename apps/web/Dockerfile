@@ -2,6 +2,8 @@
 FROM node:22-alpine AS pruner
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 RUN apk add --no-cache libc6-compat
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 WORKDIR /app
 RUN pnpm add -g turbo@^2
 COPY . .
@@ -11,6 +13,7 @@ RUN turbo prune @techteam/web --docker
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 RUN apk add --no-cache libc6-compat
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 WORKDIR /app
 
 # Copy pruned package.json files first (Docker cache layer for deps)
@@ -22,6 +25,7 @@ RUN pnpm install --frozen-lockfile || pnpm install
 # Copy full source and build
 COPY --from=pruner /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.json tsconfig.json
 
 # Build args for Next.js public env vars (baked at build time)
 ARG NEXT_PUBLIC_API_URL

@@ -64,7 +64,8 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     entrypoint: []
-    command: ["node", "apps/api/dist/worker.js"]
+    working_dir: /app/apps/api
+    command: ["node", "--import", "tsx/esm", "dist/worker.js"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-techteam}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-techteam}

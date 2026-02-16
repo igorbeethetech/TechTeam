@@ -7,5 +7,5 @@ npx prisma migrate deploy
 echo "[entrypoint] Migrations complete."
 
 echo "[entrypoint] Starting API server..."
-cd /app
-exec node apps/api/dist/server.js
+cd /app/apps/api
+exec node --import tsx/esm dist/server.js
