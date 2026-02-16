@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Milestone v1.1 -- Phase 10 in progress: Docker Deploy
+**Current focus:** Milestone v1.1 -- Phase 10 complete: Docker Deploy -- Phase 11 next: Pipeline E2E
 
 ## Current Position
 
 Phase: 10 - Docker Deploy
-Plan: 2 of 3 complete
-Status: Plan 10-02 complete -- Web Dockerfile with standalone output
-Last activity: 2026-02-16 -- Plan 10-02 completed (Web Dockerfile & next.config standalone)
+Plan: 3 of 3 complete
+Status: Phase 10 complete -- Full Docker deployment verified with 5 services
+Last activity: 2026-02-16 -- Plan 10-03 completed (docker-compose.prod.yml & full stack verification)
 
-Progress: [###################███████████] 82% (9/11 phases complete)
+Progress: [#######################█████████] 91% (10/11 phases complete)
 
 v1.0: [██████████████████████████████] 100% (6/6 phases)
-v1.1: [██████████████████░░░░░░░░░░░░] 60% (3/5 phases complete)
+v1.1: [████████████████████████░░░░░░] 80% (4/5 phases complete)
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ v1.1: [██████████████████░░░░░░�
 | 07-sidebar-navigation | 2/2 | 6min | 3min |
 | 08-websocket-realtime | 3/3 | 11min | 4min |
 | 09-claude-max | 2/2 | 8min | 4min |
-| 10-docker-deploy | 2/3 | 6min | 3min |
+| 10-docker-deploy | 3/3 | 41min | 14min |
 | 11-pipeline-e2e | — | — | — |
 
 ## Accumulated Context
@@ -94,6 +94,12 @@ Recent decisions affecting current work:
 - [10-02]: frozen-lockfile fallback in Web Dockerfile -- pnpm install --frozen-lockfile || pnpm install for turbo prune compatibility
 - [10-02]: No public/ COPY in Web Dockerfile runner -- apps/web/public does not exist
 - [10-02]: import.meta.dirname for outputFileTracingRoot -- ESM-compatible Node 22+ path resolution
+- [10-03]: tsx/esm loader for production runtime -- workspace packages export raw .ts, node --import tsx/esm resolves them
+- [10-03]: Prisma generate with dummy DATABASE_URL in Docker builder -- .dockerignore excludes generated/, must regenerate for Alpine
+- [10-03]: Root tsconfig.json explicit COPY -- turbo prune out/full/ only includes workspace packages, not root configs
+- [10-03]: PNPM_HOME required for pnpm 10.x global installs in Docker
+- [10-03]: NODE_OPTIONS=--max-old-space-size=8192 for tsc in Docker builder stage
+- [10-03]: Worker working_dir /app/apps/api -- tsx module resolution requires CWD in workspace with tsx dependency
 
 ### Pending Todos
 
@@ -101,14 +107,14 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Research]: Claude CLI subprocess may have ENOENT spawn errors in Docker containers due to PATH inheritance issues -- needs validation during Phase 10
-- [Research]: @fastify/websocket auth on upgrade -- exact auth decorator behavior during HTTP upgrade handshake needs testing during Phase 8
-- [Research]: Prisma binary targets for Alpine Docker -- may need explicit binaryTargets in schema.prisma for Alpine containers during Phase 10
-- [Resolved]: Next.js standalone + monorepo -- addressed by outputFileTracingRoot in next.config.ts (10-02); full Docker build verification in 10-03
+- [Research]: Claude CLI subprocess may have ENOENT spawn errors in Docker containers due to PATH inheritance issues -- needs validation during Phase 11 E2E
+- [Resolved]: @fastify/websocket auth on upgrade -- works correctly with auth decorator on HTTP upgrade (tested in Phase 8)
+- [Resolved]: Prisma binary targets for Alpine Docker -- prisma generate in Docker builder stage creates Alpine-native client; no explicit binaryTargets needed with Prisma 7.x
+- [Resolved]: Next.js standalone + monorepo -- addressed by outputFileTracingRoot in next.config.ts (10-02); full Docker build verified in 10-03
 
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Completed 10-02-PLAN.md (Web Dockerfile & next.config standalone)
-Resume file: .planning/phases/10-docker-deploy/10-02-SUMMARY.md
-Next action: Execute Plan 10-03 (docker-compose.prod.yml & env template)
+Stopped at: Completed 10-03-PLAN.md (docker-compose.prod.yml & full stack verification)
+Resume file: .planning/phases/10-docker-deploy/10-03-SUMMARY.md
+Next action: Execute Phase 11 (Pipeline E2E)
