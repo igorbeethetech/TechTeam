@@ -88,11 +88,14 @@ async function processMergeJob(
 
   try {
     // ---- STEP 1: Auto-merge ----
-    const { mergeFromBranch, resetWorkingDir, createGitClient, checkConflictMarkers } =
+    const { mergeFromBranch, resetWorkingDir, createGitClient, checkConflictMarkers, injectGitToken, restoreGitRemote } =
       await import("../lib/git.js")
-    const { closePullRequest, extractPrNumber } = await import(
+    const { closePullRequest, extractPrNumber, getGithubTokenForTenant } = await import(
       "../lib/github.js"
     )
+
+    // Fetch tenant's GitHub token for push and PR operations
+    const githubToken = await getGithubTokenForTenant(tenantId)
 
     const merge = await mergeFromBranch(
       project.repoPath,
@@ -120,14 +123,20 @@ async function processMergeJob(
         )
       }
 
-      // Push merged default branch
+      // Push merged default branch (with token injection for authentication)
       const git = createGitClient(project.repoPath)
-      await git.push("origin", project.defaultBranch)
+      const originalUrl = await injectGitToken(project.repoPath, githubToken)
+      try {
+        await git.push("origin", project.defaultBranch)
+      } finally {
+        await restoreGitRemote(project.repoPath, originalUrl)
+      }
 
       // Close the PR (we merged locally, not via GitHub API)
       await closePullRequest({
         repoUrl: project.repoUrl,
         prNumber: extractPrNumber(prUrl),
+        token: githubToken,
       })
 
       // Update demand: merged, done, set completedAt for accurate metrics (METR-02)
@@ -268,11 +277,17 @@ async function processMergeJob(
         await git.commit(
           `merge: AI-resolved conflicts for demand/${demandId}`
         )
-        await git.push("origin", project.defaultBranch)
+        const originalUrl2 = await injectGitToken(project.repoPath, githubToken)
+        try {
+          await git.push("origin", project.defaultBranch)
+        } finally {
+          await restoreGitRemote(project.repoPath, originalUrl2)
+        }
 
         await closePullRequest({
           repoUrl: project.repoUrl,
           prNumber: extractPrNumber(prUrl),
+          token: githubToken,
         })
 
         // Update demand: merged, done, set completedAt for accurate metrics (METR-02)
