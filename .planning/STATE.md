@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Demandas de desenvolvimento fluem automaticamente do input humano ate codigo pronto para merge, com agentes IA executando cada fase e o humano tendo visibilidade total via dashboard Kanban.
-**Current focus:** Milestone v1.1 -- Phase 10 complete: Docker Deploy -- Phase 11 next: Pipeline E2E
+**Current focus:** Milestone v1.1 -- Phase 11 in progress: Pipeline E2E (Plan 01 complete)
 
 ## Current Position
 
-Phase: 10 - Docker Deploy
-Plan: 3 of 3 complete
-Status: Phase 10 complete -- Full Docker deployment verified with 5 services
-Last activity: 2026-02-16 -- Plan 10-03 completed (docker-compose.prod.yml & full stack verification)
+Phase: 11 - Pipeline E2E
+Plan: 1 of 2 complete
+Status: Plan 11-01 complete -- Git push authentication wired into Development and Merge phases
+Last activity: 2026-03-01 -- Plan 11-01 completed (git token injection for push auth)
 
 Progress: [#######################█████████] 91% (10/11 phases complete)
 
@@ -45,7 +45,7 @@ v1.1: [████████████████████████�
 | 08-websocket-realtime | 3/3 | 11min | 4min |
 | 09-claude-max | 2/2 | 8min | 4min |
 | 10-docker-deploy | 3/3 | 41min | 14min |
-| 11-pipeline-e2e | — | — | — |
+| 11-pipeline-e2e | 1/2 | 3min | 3min |
 
 ## Accumulated Context
 
@@ -100,6 +100,9 @@ Recent decisions affecting current work:
 - [10-03]: PNPM_HOME required for pnpm 10.x global installs in Docker
 - [10-03]: NODE_OPTIONS=--max-old-space-size=8192 for tsc in Docker builder stage
 - [10-03]: Worker working_dir /app/apps/api -- tsx module resolution requires CWD in workspace with tsx dependency
+- [11-01]: Inline URL regex in git.ts to avoid circular dependency with github.ts
+- [11-01]: Token URL format uses x-access-token protocol for GitHub App-style auth
+- [11-01]: Always restore original remote URL in finally block to prevent token leakage
 
 ### Pending Todos
 
@@ -114,7 +117,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16
-Stopped at: Completed 10-03-PLAN.md (docker-compose.prod.yml & full stack verification)
-Resume file: .planning/phases/10-docker-deploy/10-03-SUMMARY.md
-Next action: Execute Phase 11 (Pipeline E2E)
+Last session: 2026-03-01
+Stopped at: Completed 11-01-PLAN.md (git push authentication for pipeline)
+Resume file: .planning/phases/11-pipeline-e2e/11-01-SUMMARY.md
+Next action: Execute Plan 11-02 (E2E pipeline testing)
