@@ -398,6 +398,8 @@ async function handleDevelopmentPhase(ctx: {
       createGitClient,
       getWorktreePath,
       createWorktree,
+      injectGitToken,
+      restoreGitRemote,
     } = await import("../lib/git.js")
     const { createPullRequest, getGithubTokenForTenant } = await import("../lib/github.js")
 
@@ -490,30 +492,36 @@ async function handleDevelopmentPhase(ctx: {
         },
       })
 
-      // 4. Commit and push (use effectiveRepoPath for worktree support)
+      // 4. Inject token, commit and push, create PR (use effectiveRepoPath for worktree support)
       const commitMessage =
         agentResult.output?.commitMessage ??
         `feat(demand/${demand.id}): ${demand.title}`
-      await commitAndPush(effectiveRepoPath, branchName, commitMessage)
 
-      // 5. PR management
-      const prUrl = demand.prUrl as string | null
-      if (!prUrl) {
-        // First run: create PR
-        const newPrUrl = await createPullRequest({
-          repoUrl: project.repoUrl,
-          title: `[Demand ${demand.id}] ${demand.title}`,
-          body: buildPrBody(demand, agentResult.output),
-          head: branchName,
-          base: project.defaultBranch,
-          token: githubToken,
-        })
-        await prisma.demand.update({
-          where: { id: demandId },
-          data: { prUrl: newPrUrl },
-        })
+      const originalRemoteUrl = await injectGitToken(effectiveRepoPath, githubToken)
+      try {
+        await commitAndPush(effectiveRepoPath, branchName, commitMessage)
+
+        // 5. PR management
+        const prUrl = demand.prUrl as string | null
+        if (!prUrl) {
+          // First run: create PR
+          const newPrUrl = await createPullRequest({
+            repoUrl: project.repoUrl,
+            title: `[Demand ${demand.id}] ${demand.title}`,
+            body: buildPrBody(demand, agentResult.output),
+            head: branchName,
+            base: project.defaultBranch,
+            token: githubToken,
+          })
+          await prisma.demand.update({
+            where: { id: demandId },
+            data: { prUrl: newPrUrl },
+          })
+        }
+        // If prUrl exists, the push already updates the existing PR
+      } finally {
+        await restoreGitRemote(effectiveRepoPath, originalRemoteUrl)
       }
-      // If prUrl exists, the push already updates the existing PR
 
       // 6. Advance to testing
       await prisma.demand.update({

@@ -149,3 +149,47 @@ export async function removeWorktree(
     )
   }
 }
+
+/**
+ * Inject a GitHub token into the git remote URL for authenticated push operations.
+ * Returns the original remote URL so it can be restored after the push.
+ *
+ * Format: https://x-access-token:{token}@github.com/{owner}/{repo}.git
+ *
+ * IMPORTANT: Always call restoreGitRemote in a finally block after push
+ * to prevent the token from leaking in git logs or config.
+ */
+export async function injectGitToken(
+  repoPath: string,
+  token: string
+): Promise<string> {
+  const git = createGitClient(repoPath)
+  const originalUrl = await git.remote(["get-url", "origin"])
+  if (!originalUrl) {
+    throw new Error("No remote 'origin' found in git repository")
+  }
+
+  // Parse owner/repo from HTTPS or SSH URL
+  const match = originalUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/)
+  if (!match) {
+    throw new Error(`Cannot parse GitHub owner/repo from remote URL: ${originalUrl}`)
+  }
+  const [, owner, repo] = match
+
+  const tokenUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`
+  await git.remote(["set-url", "origin", tokenUrl])
+
+  return originalUrl
+}
+
+/**
+ * Restore the git remote URL to its original value after a token-authenticated push.
+ * Must be called in a finally block after injectGitToken to prevent token leakage.
+ */
+export async function restoreGitRemote(
+  repoPath: string,
+  originalUrl: string
+): Promise<void> {
+  const git = createGitClient(repoPath)
+  await git.remote(["set-url", "origin", originalUrl])
+}
