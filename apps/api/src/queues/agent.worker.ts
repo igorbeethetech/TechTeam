@@ -24,10 +24,10 @@ function getConcurrencyRedis(): IORedis {
 
 // Timeout per phase (AGENT-07 requirement)
 const PHASE_TIMEOUTS: Record<string, number> = {
-  discovery: 2 * 60 * 1000, // 2 minutes
-  planning: 5 * 60 * 1000, // 5 minutes
-  development: 30 * 60 * 1000, // 30 minutes
-  testing: 10 * 60 * 1000, // 10 minutes
+  discovery: 10 * 60 * 1000, // 10 minutes
+  planning: 10 * 60 * 1000, // 10 minutes
+  development: 60 * 60 * 1000, // 60 minutes
+  testing: 15 * 60 * 1000, // 15 minutes
 }
 
 // Maximum rejection cycles before pausing for human review

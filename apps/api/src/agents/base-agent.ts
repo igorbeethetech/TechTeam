@@ -42,12 +42,19 @@ export async function executeAgent(
   }
 
   const abortController = new AbortController()
-  const timer = setTimeout(() => abortController.abort(), params.timeoutMs)
 
   const hasTools =
     params.allowedTools !== undefined && params.allowedTools.length > 0
 
-  try {
+  // Use Promise.race to guarantee timeout even if AbortController doesn't propagate
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      abortController.abort()
+      reject(new Error(`Agent execution timed out after ${params.timeoutMs}ms`))
+    }, params.timeoutMs)
+  })
+
+  const agentPromise = (async (): Promise<AgentExecutionResult> => {
     let result: SDKResultMessage | null = null
 
     for await (const message of query({
@@ -92,17 +99,7 @@ export async function executeAgent(
       costUsd: result.total_cost_usd,
       durationMs: result.duration_ms,
     }
-  } catch (error: unknown) {
-    if (
-      error instanceof Error &&
-      (error.name === "AbortError" || error.message.includes("aborted"))
-    ) {
-      throw new Error(
-        `Agent execution timed out after ${params.timeoutMs}ms`
-      )
-    }
-    throw error
-  } finally {
-    clearTimeout(timer)
-  }
+  })()
+
+  return Promise.race([agentPromise, timeoutPromise])
 }

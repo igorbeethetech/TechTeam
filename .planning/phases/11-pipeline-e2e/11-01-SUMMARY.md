@@ -69,7 +69,7 @@ Each task was committed atomically:
 1. **Task 1: Add git token injection helpers and wire into Development handler** - `d69dac8` (feat)
 2. **Task 2: Wire git token injection and tenant token into Merge worker** - `4a6feca` (feat)
 
-**Plan metadata:** [pending] (docs: complete plan)
+**Plan metadata:** `ceee11a` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/api/src/lib/git.ts` - Added injectGitToken() and restoreGitRemote() exported functions

@@ -14,6 +14,12 @@ import metricsRoutes from "./routes/metrics.js"
 import notificationRoutes from "./routes/notifications.js"
 import settingsRoutes from "./routes/settings.js"
 import wsRoutes from "./routes/ws.js"
+import clientRoutes from "./routes/clients.js"
+import reqsProjectRoutes from "./routes/reqs-projects.js"
+import meetingRoutes from "./routes/meetings.js"
+import stickyRoutes from "./routes/stickies.js"
+import aiSuggestionRoutes from "./routes/ai-suggestions.js"
+import beeAiRoutes from "./routes/bee-ai.js"
 
 const app = Fastify({ logger: true })
 
@@ -48,6 +54,13 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(metricsRoutes, { prefix: "/api/metrics" })
   await protectedApp.register(notificationRoutes, { prefix: "/api/notifications" })
   await protectedApp.register(settingsRoutes, { prefix: "/api/settings" })
+  // BeeReqs routes
+  await protectedApp.register(clientRoutes, { prefix: "/api/clients" })
+  await protectedApp.register(reqsProjectRoutes, { prefix: "/api/reqs-projects" })
+  await protectedApp.register(meetingRoutes, { prefix: "/api/meetings" })
+  await protectedApp.register(stickyRoutes, { prefix: "/api/stickies" })
+  await protectedApp.register(aiSuggestionRoutes, { prefix: "/api/ai-suggestions" })
+  await protectedApp.register(beeAiRoutes, { prefix: "/api/bee" })
   await protectedApp.register(wsRoutes)
 })
 

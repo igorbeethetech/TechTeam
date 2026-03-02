@@ -2,7 +2,10 @@ import { prisma } from "./client.js"
 
 // Models that require tenant filtering
 // User is managed by Better Auth separately
-const TENANT_MODELS = ["Project", "Demand", "AgentRun", "Notification", "TenantSettings"] as const
+const TENANT_MODELS = [
+  "Project", "Demand", "AgentRun", "Notification", "TenantSettings",
+  "Client", "ReqsProject", "Meeting", "TranscriptChunk", "Sticky", "AISuggestion",
+] as const
 
 export function forTenant(tenantId: string) {
   return prisma.$extends({

@@ -28,6 +28,14 @@ const EVENT_TO_QUERY_KEYS: Record<string, (payload: any) => string[][]> = {
     ["notifications", "unread-count"],
     ["notifications"],
   ],
+  // BeeReqs events
+  "sticky:created": (p) => [["stickies", p.reqsProjectId]],
+  "sticky:updated": (p) => [["stickies", p.reqsProjectId]],
+  "sticky:deleted": (p) => [["stickies", p.reqsProjectId]],
+  "suggestion:created": (p) => [["ai-suggestions", p.meetingId]],
+  "suggestion:updated": (p) => [["ai-suggestions", p.meetingId]],
+  "meeting:updated": (p) => [["meeting", p.meetingId], ["meetings", p.reqsProjectId]],
+  "transcript:chunk": (p) => [["transcript", p.meetingId]],
 }
 
 const WebSocketContext = createContext<ConnectionStatus>("disconnected")

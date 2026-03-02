@@ -164,7 +164,9 @@ export async function injectGitToken(
   token: string
 ): Promise<string> {
   const git = createGitClient(repoPath)
-  const originalUrl = await git.remote(["get-url", "origin"])
+  const rawUrl = await git.remote(["get-url", "origin"])
+  // Sanitize: trim whitespace, strip literal \n escape sequences, remove control chars
+  const originalUrl = rawUrl.replace(/\\n/g, "").replace(/[\r\n]+/g, "").trim()
   if (!originalUrl) {
     throw new Error("No remote 'origin' found in git repository")
   }
@@ -176,7 +178,8 @@ export async function injectGitToken(
   }
   const [, owner, repo] = match
 
-  const tokenUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`
+  const sanitizedToken = token.replace(/[\r\n\s]+/g, "")
+  const tokenUrl = `https://x-access-token:${sanitizedToken}@github.com/${owner}/${repo}.git`
   await git.remote(["set-url", "origin", tokenUrl])
 
   return originalUrl
@@ -191,5 +194,6 @@ export async function restoreGitRemote(
   originalUrl: string
 ): Promise<void> {
   const git = createGitClient(repoPath)
-  await git.remote(["set-url", "origin", originalUrl])
+  const sanitizedUrl = originalUrl.replace(/\\n/g, "").replace(/[\r\n]+/g, "").trim()
+  await git.remote(["set-url", "origin", sanitizedUrl])
 }

@@ -50,3 +50,53 @@ export {
 } from "./constants/index"
 
 export { type WsEventType, type WsEvent } from "./types/ws-events"
+
+// === BeeReqs exports ===
+
+export {
+  clientCreateSchema,
+  clientUpdateSchema,
+  type ClientCreate,
+  type ClientUpdate,
+} from "./schemas/client"
+
+export {
+  reqsProjectCreateSchema,
+  reqsProjectUpdateSchema,
+  type ReqsProjectCreate,
+  type ReqsProjectUpdate,
+} from "./schemas/reqs-project"
+
+export {
+  meetingCreateSchema,
+  meetingUpdateSchema,
+  type MeetingCreate,
+  type MeetingUpdate,
+} from "./schemas/meeting"
+
+export {
+  stickyCreateSchema,
+  stickyUpdateSchema,
+  type StickyCreate,
+  type StickyUpdate,
+} from "./schemas/sticky"
+
+export {
+  analyzeChunkRequestSchema,
+  chunkAnalysisSchema,
+  type AnalyzeChunkRequest,
+  type ChunkAnalysis,
+} from "./schemas/ai-analysis"
+
+export {
+  STICKY_CATEGORIES,
+  STICKY_CATEGORY_CONFIG,
+  CLIENT_SECTORS,
+  SECTOR_LABELS,
+  SUGGESTION_DIMENSIONS,
+  DIMENSION_LABELS,
+  type BeeStickyCategory,
+  type BeeClientSector,
+  type BeeSuggestionDimension,
+  type BeeLanguage,
+} from "./constants/bee"

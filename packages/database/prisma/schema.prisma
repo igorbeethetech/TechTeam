@@ -129,6 +129,7 @@ model TenantSettings {
   githubToken        String?
   anthropicApiKey    String?
   agentExecutionMode AgentExecutionMode @default(sdk)
+  beeLanguage        String             @default("pt-BR")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -296,4 +297,276 @@ model Notification {
 
   @@index([tenantId, read, createdAt])
   @@index([tenantId, createdAt])
+}
+
+// === BEEREQS - Requirements Meeting System ===
+
+enum ClientStatus {
+  active
+  inactive
+  archived
+}
+
+enum ClientSector {
+  education
+  healthcare
+  legal
+  insurance
+  finance
+  retail
+  technology
+  other
+}
+
+enum ReqsProjectStatus {
+  discovery
+  requirements
+  proposal
+  approved
+  in_progress
+  completed
+  cancelled
+}
+
+enum ReqsProjectType {
+  automation
+  chatbot
+  integration
+  platform
+  rpa
+  consulting
+  other
+}
+
+enum MeetingStatus {
+  scheduled
+  recording
+  processing
+  completed
+}
+
+enum StickyCategory {
+  problem
+  process
+  requirement
+  integration
+  risk
+  decision
+  question
+  scope
+  persona
+  constraint
+  assumption
+}
+
+enum StickyPriority {
+  critical
+  high
+  medium
+  low
+}
+
+enum StickyStatus {
+  open
+  confirmed
+  rejected
+  deferred
+}
+
+enum StickySource {
+  ai
+  manual
+}
+
+enum SuggestionType {
+  question
+  alert
+  insight
+  risk_warning
+}
+
+enum SuggestionUrgency {
+  critical
+  high
+  medium
+  low
+}
+
+enum SuggestionDimension {
+  scope
+  exceptions
+  data
+  permissions
+  volume
+  integrations
+  business_rules
+  sla
+  migration
+  compliance
+  dependencies
+  acceptance_criteria
+}
+
+enum SuggestionStatus {
+  pending
+  asked
+  deferred
+  dismissed
+}
+
+model Client {
+  id           String       @id @default(cuid())
+  tenantId     String
+  name         String
+  slug         String
+  sector       ClientSector
+  description  String?
+  color        String       @default("#6c5ce7")
+  logoUrl      String?
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  status       ClientStatus @default(active)
+  metadata     Json?
+  createdBy    String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  reqsProjects ReqsProject[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model ReqsProject {
+  id             String            @id @default(cuid())
+  tenantId       String
+  clientId       String
+  name           String
+  slug           String
+  description    String?
+  status         ReqsProjectStatus @default(discovery)
+  projectType    ReqsProjectType?
+  estimatedHours Int?
+  estimatedValue Float?
+  startDate      DateTime?
+  deadline       DateTime?
+  metadata       Json?
+  createdBy      String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  meetings Meeting[]
+  stickies Sticky[]
+
+  @@unique([clientId, slug])
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([tenantId, status])
+}
+
+model Meeting {
+  id              String        @id @default(cuid())
+  tenantId        String
+  reqsProjectId   String
+  title           String
+  meetingNumber   Int
+  status          MeetingStatus @default(scheduled)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  durationSeconds Int?
+  audioUrl        String?
+  participants    String[]
+  summary         String?       @db.Text
+  notes           String?       @db.Text
+  aiAnalysis      Json?
+  metadata        Json?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reqsProject      ReqsProject      @relation(fields: [reqsProjectId], references: [id], onDelete: Cascade)
+  transcriptChunks TranscriptChunk[]
+  stickies         Sticky[]
+  aiSuggestions    AISuggestion[]
+
+  @@index([tenantId])
+  @@index([reqsProjectId])
+  @@index([reqsProjectId, meetingNumber])
+}
+
+model TranscriptChunk {
+  id             String   @id @default(cuid())
+  tenantId       String
+  meetingId      String
+  chunkIndex     Int
+  text           String   @db.Text
+  speaker        String?
+  timestampStart Float?
+  timestampEnd   Float?
+  confidence     Float?
+  isProcessed    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([meetingId])
+  @@index([meetingId, chunkIndex])
+}
+
+model Sticky {
+  id               String         @id @default(cuid())
+  tenantId         String
+  meetingId        String
+  reqsProjectId    String
+  category         StickyCategory
+  text             String
+  details          String?        @db.Text
+  priority         StickyPriority @default(medium)
+  status           StickyStatus   @default(open)
+  source           StickySource   @default(ai)
+  positionX        Float          @default(0)
+  positionY        Float          @default(0)
+  boardColumn      String?
+  transcriptChunkId String?
+  timestampRef     String?
+  tags             String[]
+  relatedStickyIds String[]
+  createdBy        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  meeting     Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  reqsProject ReqsProject @relation(fields: [reqsProjectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([meetingId])
+  @@index([reqsProjectId])
+  @@index([reqsProjectId, category])
+}
+
+model AISuggestion {
+  id              String              @id @default(cuid())
+  tenantId        String
+  meetingId       String
+  suggestionType  SuggestionType
+  text            String
+  reason          String?
+  urgency         SuggestionUrgency   @default(medium)
+  dimension       SuggestionDimension?
+  status          SuggestionStatus    @default(pending)
+  triggerChunkId  String?
+  triggerStickyId String?
+  createdAt       DateTime            @default(now())
+  resolvedAt      DateTime?
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([meetingId])
+  @@index([meetingId, status])
 }

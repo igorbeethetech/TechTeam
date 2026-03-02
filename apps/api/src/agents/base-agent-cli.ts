@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"
+import { spawn, type ChildProcess } from "node:child_process"
 import type { AgentExecutionParams, AgentExecutionResult } from "./base-agent.js"
 
 /**
@@ -6,31 +6,31 @@ import type { AgentExecutionParams, AgentExecutionResult } from "./base-agent.js
  * Spawns `claude` CLI subprocess with JSON output and returns AgentExecutionResult
  * matching the same interface as the SDK executor (executeAgent).
  *
- * Prompt is piped via stdin to avoid command-line length limits.
- * The CLI reads from stdin when no `-p` argument is provided.
+ * Prompt is piped via stdin. The JSON schema is appended to the prompt text
+ * as instructions (avoiding Windows command-line length limits).
  */
 export async function executeAgentCli(
   params: AgentExecutionParams
 ): Promise<AgentExecutionResult> {
+  // Build the full prompt: original prompt + schema instructions appended
+  let fullPrompt = params.prompt
+  if (params.schema) {
+    fullPrompt += "\n\n---\nIMPORTANT: You MUST respond with valid JSON matching this exact schema. Output ONLY the JSON, no markdown fences, no explanation:\n" + JSON.stringify(params.schema, null, 2)
+  }
+
   const args: string[] = [
-    "--output-format",
-    "json",
-    "--max-turns",
-    String(params.maxTurns ?? 5),
+    "-p", "-",
+    "--output-format", "json",
+    "--max-turns", String(params.maxTurns ?? 5),
     "--no-session-persistence",
   ]
-
-  // Add JSON schema for structured output
-  if (params.schema) {
-    args.push("--json-schema", JSON.stringify(params.schema))
-  }
 
   // Add system prompt
   if (params.systemPrompt) {
     args.push("--system-prompt", params.systemPrompt)
   }
 
-  // Add allowed tools -- each tool as a separate arg after --allowedTools
+  // Add allowed tools
   if (params.allowedTools && params.allowedTools.length > 0) {
     args.push("--allowedTools")
     for (const tool of params.allowedTools) {
@@ -44,39 +44,52 @@ export async function executeAgentCli(
     args.push("--model", params.model)
   }
 
+  // Build env: remove CLAUDECODE (nested session check) and ANTHROPIC_API_KEY
+  // (so CLI uses the Claude MAX subscription instead of API credits)
+  const env = { ...process.env }
+  delete env.CLAUDECODE
+  delete env.ANTHROPIC_API_KEY
+
   return new Promise((resolve, reject) => {
     const startTime = Date.now()
+    let resolved = false
 
-    const child = spawn("claude", args, {
+    const child: ChildProcess = spawn("claude", args, {
       cwd: params.cwd,
-      shell: process.platform === "win32", // Required on Windows for .cmd resolution
-      env: { ...process.env }, // Inherit PATH
-      stdio: ["pipe", "pipe", "pipe"], // stdin is pipe for prompt piping
+      shell: process.platform === "win32",
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
     })
 
     let stdout = ""
     let stderr = ""
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    child.stdout!.on("data", (chunk: Buffer) => {
       stdout += chunk.toString()
     })
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stderr!.on("data", (chunk: Buffer) => {
       stderr += chunk.toString()
     })
 
-    // Pipe prompt via stdin and close it
-    child.stdin.write(params.prompt)
-    child.stdin.end()
+    // Write prompt via stdin and close
+    child.stdin!.write(fullPrompt, () => {
+      child.stdin!.end()
+    })
 
     // Timeout handling
     const timer = setTimeout(() => {
-      child.kill("SIGTERM")
-      reject(
-        new Error(`Agent execution timed out after ${params.timeoutMs}ms`)
-      )
+      if (!resolved) {
+        resolved = true
+        child.kill("SIGTERM")
+        reject(
+          new Error(`Agent execution timed out after ${params.timeoutMs}ms`)
+        )
+      }
     }, params.timeoutMs)
 
     child.on("error", (err) => {
+      if (resolved) return
+      resolved = true
       clearTimeout(timer)
       if (err.message.includes("ENOENT")) {
         reject(
@@ -91,6 +104,8 @@ export async function executeAgentCli(
     })
 
     child.on("close", (code) => {
+      if (resolved) return
+      resolved = true
       clearTimeout(timer)
       const durationMs = Date.now() - startTime
 
@@ -111,9 +126,20 @@ export async function executeAgentCli(
           return
         }
 
+        // CLI with --output-format json returns {result, ...}
+        // Try to parse the result as JSON if it's a string (structured output)
+        let output = json.result
+        if (typeof output === "string") {
+          try {
+            output = JSON.parse(output)
+          } catch {
+            // Not JSON, keep as-is
+          }
+        }
+
         resolve({
-          output: json.structured_output ?? json.result,
-          tokensIn: 0, // CLI does not expose token counts
+          output,
+          tokensIn: 0,
           tokensOut: 0,
           costUsd: json.total_cost_usd ?? 0,
           durationMs: json.duration_ms ?? durationMs,

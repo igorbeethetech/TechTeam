@@ -4,6 +4,14 @@ export type WsEventType =
   | "agent:status-changed"
   | "agent-run:updated"
   | "notification:created"
+  // BeeReqs events
+  | "sticky:created"
+  | "sticky:updated"
+  | "sticky:deleted"
+  | "suggestion:created"
+  | "suggestion:updated"
+  | "meeting:updated"
+  | "transcript:chunk"
 
 export interface WsEvent {
   type: WsEventType
@@ -13,5 +21,11 @@ export interface WsEvent {
     projectId?: string
     agentRunId?: string
     notificationId?: string
+    // BeeReqs payloads
+    stickyId?: string
+    meetingId?: string
+    suggestionId?: string
+    reqsProjectId?: string
+    chunkId?: string
   }
 }
