@@ -10,7 +10,7 @@ export const demandCreateSchema = z.object({
 export const demandUpdateSchema = demandCreateSchema.partial().omit({ projectId: true })
 
 export const demandStageUpdateSchema = z.object({
-  stage: z.enum(["inbox", "discovery", "planning", "development", "testing", "merge", "done"]),
+  stage: z.enum(["inbox", "discovery", "planning", "development", "testing", "review", "done"]),
 })
 
 export type DemandCreate = z.infer<typeof demandCreateSchema>

@@ -72,7 +72,11 @@
       "Bash(__NEW_LINE_2789c845848e43ff__ curl:*)",
       "Bash(pnpm:*)",
       "Bash(__NEW_LINE_b9f85fa55ac95cb5__ curl:*)",
-      "Bash(PGPASSWORD=techteam_dev psql:*)"
+      "Bash(PGPASSWORD=techteam_dev psql:*)",
+      "Bash(npx tsc:*)",
+      "Bash(docker ps:*)",
+      "Bash(claude auth:*)",
+      "Bash(start:*)"
     ]
   }
 }

@@ -106,6 +106,143 @@ export async function closePullRequest(params: {
   })
 }
 
+export interface GithubOrg {
+  login: string
+  avatarUrl: string
+}
+
+/**
+ * Fetch the GitHub organizations the authenticated user belongs to,
+ * plus the user's personal account info.
+ */
+export async function getGithubOrgs(token: string): Promise<{
+  user: { login: string; avatarUrl: string }
+  orgs: GithubOrg[]
+}> {
+  const octokit = getOctokit(token)
+
+  const { data: user } = await octokit.rest.users.getAuthenticated()
+  const { data: orgs } = await octokit.rest.orgs.listForAuthenticatedUser({
+    per_page: 100,
+  })
+
+  return {
+    user: { login: user.login, avatarUrl: user.avatar_url },
+    orgs: orgs.map((o) => ({ login: o.login, avatarUrl: o.avatar_url })),
+  }
+}
+
+export interface GithubRepo {
+  name: string
+  fullName: string
+  url: string
+  defaultBranch: string
+  isPrivate: boolean
+}
+
+/**
+ * List repositories for the authenticated user (personal) or for an organization.
+ * When orgLogin is "__personal__", lists repos owned by the authenticated user.
+ */
+export async function listGithubRepos(
+  token: string,
+  orgLogin: string
+): Promise<GithubRepo[]> {
+  const octokit = getOctokit(token)
+
+  let repos: Array<{
+    name: string
+    full_name: string
+    html_url: string
+    default_branch?: string | undefined
+    private: boolean
+  }>
+
+  if (orgLogin === "__personal__") {
+    const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+      type: "owner",
+      sort: "updated",
+      per_page: 100,
+    })
+    repos = data
+  } else {
+    const { data } = await octokit.rest.repos.listForOrg({
+      org: orgLogin,
+      type: "all",
+      sort: "updated",
+      per_page: 100,
+    })
+    repos = data
+  }
+
+  return repos.map((r) => ({
+    name: r.name,
+    fullName: r.full_name,
+    url: r.html_url,
+    defaultBranch: r.default_branch ?? "main",
+    isPrivate: r.private,
+  }))
+}
+
+export interface CreateRepoParams {
+  token: string
+  orgLogin: string
+  repoName: string
+  description?: string
+  isPrivate: boolean
+}
+
+export interface CreateRepoResult {
+  repoUrl: string
+  cloneUrl: string
+  defaultBranch: string
+  fullName: string
+}
+
+/**
+ * Create a new repository on GitHub.
+ * Uses personal account when orgLogin is "__personal__", otherwise creates under the org.
+ * auto_init creates an initial commit with a README.
+ */
+export async function createGithubRepo(
+  params: CreateRepoParams
+): Promise<CreateRepoResult> {
+  const octokit = getOctokit(params.token)
+
+  let data: {
+    html_url: string
+    clone_url: string
+    default_branch: string
+    full_name: string
+  }
+
+  if (params.orgLogin === "__personal__") {
+    const res = await octokit.rest.repos.createForAuthenticatedUser({
+      name: params.repoName,
+      description: params.description ?? "",
+      private: params.isPrivate,
+      auto_init: true,
+    })
+    data = res.data
+  } else {
+    const res = await octokit.rest.repos.createInOrg({
+      org: params.orgLogin,
+      name: params.repoName,
+      description: params.description ?? "",
+      private: params.isPrivate,
+      auto_init: true,
+    })
+    data = res.data
+  }
+
+  return {
+    repoUrl: data.html_url,
+    cloneUrl: data.clone_url,
+    defaultBranch: data.default_branch ?? "main",
+    fullName: data.full_name,
+  }
+}
+
 /**
  * Extract the PR number from a GitHub PR URL.
  * e.g. "https://github.com/owner/repo/pull/42" -> 42

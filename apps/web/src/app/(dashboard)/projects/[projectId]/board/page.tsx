@@ -2,9 +2,10 @@
 
 import { use, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/lib/api"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useWsStatus } from "@/hooks/use-websocket"
 import { BoardHeader } from "@/components/board/board-header"
 import { KanbanBoardView } from "@/components/board/kanban-board"
@@ -55,8 +56,25 @@ export default function BoardPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-24" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="grid auto-cols-[minmax(180px,1fr)] grid-flow-col gap-4 min-w-[1400px]">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="rounded-lg border">
+              <div className="flex items-center justify-between p-3 border-b">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-8" />
+              </div>
+              <div className="p-2 space-y-2 min-h-[120px]">
+                {i < 3 && <Skeleton className="h-20 w-full" />}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

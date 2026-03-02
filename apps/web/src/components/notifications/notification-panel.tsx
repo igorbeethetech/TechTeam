@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, GitMerge, CheckCircle2 } from "lucide-react"
+import { AlertTriangle, GitMerge, CheckCircle2, ClipboardCheck, XCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface Notification {
   id: string
-  type: "agent_failed" | "merge_needs_human" | "demand_done"
+  type: "agent_failed" | "merge_needs_human" | "demand_done" | "demand_ready_for_review" | "demand_rejected"
   title: string
   message: string
   read: boolean
@@ -25,6 +25,8 @@ const typeIcons: Record<Notification["type"], { icon: typeof AlertTriangle; colo
   agent_failed: { icon: AlertTriangle, color: "text-red-500" },
   merge_needs_human: { icon: GitMerge, color: "text-orange-500" },
   demand_done: { icon: CheckCircle2, color: "text-green-500" },
+  demand_ready_for_review: { icon: ClipboardCheck, color: "text-blue-500" },
+  demand_rejected: { icon: XCircle, color: "text-orange-500" },
 }
 
 export function NotificationPanel({ onClose }: { onClose?: () => void }) {

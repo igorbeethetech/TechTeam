@@ -25,6 +25,7 @@ import {
   Kanban,
   FolderOpen,
   BarChart3,
+  Sparkles,
   Settings,
   LogOut,
   User,
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Boards", href: "/boards", icon: Kanban },
   { label: "Projects", href: "/projects", icon: FolderOpen },
+  { label: "Skills", href: "/skills", icon: Sparkles },
   { label: "Metrics", href: "/metrics", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
 ]

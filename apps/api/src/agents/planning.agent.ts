@@ -2,6 +2,7 @@ import { zodToJsonSchema } from "zod-to-json-schema"
 import { executeAgentAuto } from "./agent-router.js"
 import { planningOutputSchema } from "@techteam/shared"
 import { prisma } from "@techteam/database"
+import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
 
 /**
  * Builds the system + user prompt for the Planning agent.
@@ -17,7 +18,8 @@ function buildPlanningPrompt(
     repoPath: string
     defaultBranch: string
   },
-  requirements: unknown
+  requirements: unknown,
+  skillsSection: string
 ): string {
   const systemContext = [
     "You are a senior software architect.",
@@ -42,6 +44,7 @@ function buildPlanningPrompt(
     JSON.stringify(requirements, null, 2),
     `\`\`\``,
     ``,
+    ...(skillsSection ? [skillsSection, ``] : []),
     `## Instructions`,
     `Create a technical implementation plan that:`,
     `1. Decomposes the work into discrete tasks, each with a clear description and type (create/modify/delete/test/config)`,
@@ -64,6 +67,7 @@ export interface PlanningAgentParams {
 
 export interface PlanningAgentResult {
   output: import("@techteam/shared").PlanningOutput
+  skillsUsed: string[]
   tokensIn: number
   tokensOut: number
   costUsd: number
@@ -101,8 +105,18 @@ export async function runPlanningAgent(
     where: { id: projectId },
   })
 
+  // Match relevant skills for this phase
+  const skills = await matchSkills({
+    tenantId,
+    phase: "planning",
+    demandTitle: demand.title,
+    demandDescription: demand.description,
+    techStack: project.techStack,
+  })
+  const skillsSection = buildSkillsPromptSection(skills)
+
   // Build contextual prompt with discovery requirements
-  const prompt = buildPlanningPrompt(demand, project, demand.requirements)
+  const prompt = buildPlanningPrompt(demand, project, demand.requirements, skillsSection)
 
   // Convert Zod schema to JSON Schema for structured output
   // Using zod-to-json-schema because z.toJSONSchema() is only in Zod v4 namespace
@@ -121,6 +135,7 @@ export async function runPlanningAgent(
 
   return {
     output,
+    skillsUsed: skills.map((s) => s.name),
     tokensIn: result.tokensIn,
     tokensOut: result.tokensOut,
     costUsd: result.costUsd,

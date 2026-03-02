@@ -3,6 +3,7 @@ import { executeAgentAuto } from "./agent-router.js"
 import { developmentOutputSchema, type DevelopmentOutput } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 import { config } from "../lib/config.js"
+import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
 
 /**
  * Builds the system + user prompt for the Development agent.
@@ -20,7 +21,8 @@ function buildDevelopmentPrompt(
   },
   plan: unknown,
   requirements: unknown,
-  rejectionFeedback?: unknown
+  rejectionFeedback: unknown | undefined,
+  skillsSection: string
 ): string {
   const parts: string[] = []
 
@@ -77,6 +79,10 @@ function buildDevelopmentPrompt(
     )
   }
 
+  if (skillsSection) {
+    parts.push(skillsSection)
+  }
+
   parts.push(
     [
       `## Instructions`,
@@ -103,6 +109,7 @@ export interface DevelopmentAgentParams {
 
 export interface DevelopmentAgentResult {
   output: DevelopmentOutput | null // Structured output may fail for complex code gen; null = fallback
+  skillsUsed: string[]
   tokensIn: number
   tokensOut: number
   costUsd: number
@@ -149,13 +156,24 @@ export async function runDevelopmentAgent(
     where: { id: projectId },
   })
 
+  // Match relevant skills for this phase
+  const skills = await matchSkills({
+    tenantId,
+    phase: "development",
+    demandTitle: demand.title,
+    demandDescription: demand.description,
+    techStack: project.techStack,
+  })
+  const skillsSection = buildSkillsPromptSection(skills)
+
   // Build contextual prompt with plan, requirements, and optional rejection feedback
   const prompt = buildDevelopmentPrompt(
     demand,
     project,
     demand.plan,
     demand.requirements,
-    rejectionFeedback
+    rejectionFeedback,
+    skillsSection
   )
 
   // Convert Zod schema to JSON Schema for structured output
@@ -180,6 +198,7 @@ export async function runDevelopmentAgent(
 
   return {
     output: parsed.success ? parsed.data : null,
+    skillsUsed: skills.map((s) => s.name),
     tokensIn: result.tokensIn,
     tokensOut: result.tokensOut,
     costUsd: result.costUsd,

@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
+import { spawn } from "node:child_process"
+import { getClaudeCliStatus, validatePreflight } from "../lib/preflight.js"
 
 export default async function settingsRoutes(fastify: FastifyInstance) {
   // GET / - Get tenant settings
@@ -58,5 +60,42 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         agentExecutionMode: settings.agentExecutionMode ?? "sdk",
       },
     }
+  })
+
+  // GET /claude-status - Check Claude CLI authentication status
+  fastify.get("/claude-status", async (_request: FastifyRequest, _reply: FastifyReply) => {
+    const status = await getClaudeCliStatus()
+    return status
+  })
+
+  // POST /claude-login - Trigger Claude CLI login (opens browser on server)
+  fastify.post("/claude-login", async (_request: FastifyRequest, _reply: FastifyReply) => {
+    return new Promise((resolve) => {
+      const child = spawn("claude", ["auth", "login"], {
+        shell: true,
+        detached: true,
+        stdio: "ignore",
+        env: { ...process.env, CLAUDECODE: undefined, ANTHROPIC_API_KEY: undefined },
+      })
+
+      child.unref()
+
+      child.on("error", () => {
+        resolve({ success: false, message: "Falha ao iniciar o processo de login do Claude CLI" })
+      })
+
+      // Don't wait for completion — the login is interactive (opens browser)
+      // Frontend should poll /claude-status to detect when auth completes
+      setTimeout(() => {
+        resolve({ success: true, message: "Processo de login iniciado. Verifique seu navegador." })
+      }, 500)
+    })
+  })
+
+  // GET /preflight - Run pre-flight validation
+  fastify.get("/preflight", async (request: FastifyRequest, _reply: FastifyReply) => {
+    const tenantId = request.session!.session.activeOrganizationId!
+    const result = await validatePreflight(tenantId)
+    return result
   })
 }

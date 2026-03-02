@@ -3,6 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema"
 import { executeAgentAuto } from "./agent-router.js"
 import { discoveryOutputSchema } from "@techteam/shared"
 import { prisma } from "@techteam/database"
+import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
 
 /**
  * Builds the system + user prompt for the Discovery agent.
@@ -11,7 +12,8 @@ import { prisma } from "@techteam/database"
  */
 function buildDiscoveryPrompt(
   demand: { title: string; description: string | null; requirements?: unknown },
-  project: { name: string; techStack: string; repoUrl: string }
+  project: { name: string; techStack: string; repoUrl: string },
+  skillsSection: string
 ): string {
   const systemContext = [
     "You are a software requirements analyst.",
@@ -43,6 +45,11 @@ function buildDiscoveryPrompt(
     }
   }
 
+  if (skillsSection) {
+    userPromptParts.push(``)
+    userPromptParts.push(skillsSection)
+  }
+
   userPromptParts.push(``)
   userPromptParts.push(`## Instructions`)
   userPromptParts.push(`Analyze this demand and produce:`)
@@ -65,6 +72,7 @@ export interface DiscoveryAgentParams {
 export interface DiscoveryAgentResult {
   output: z.infer<typeof discoveryOutputSchema>
   hasAmbiguities: boolean
+  skillsUsed: string[]
   tokensIn: number
   tokensOut: number
   costUsd: number
@@ -92,8 +100,18 @@ export async function runDiscoveryAgent(
     where: { id: projectId },
   })
 
+  // Match relevant skills for this phase
+  const skills = await matchSkills({
+    tenantId,
+    phase: "discovery",
+    demandTitle: demand.title,
+    demandDescription: demand.description,
+    techStack: project.techStack,
+  })
+  const skillsSection = buildSkillsPromptSection(skills)
+
   // Build contextual prompt
-  const prompt = buildDiscoveryPrompt(demand, project)
+  const prompt = buildDiscoveryPrompt(demand, project, skillsSection)
 
   // Convert Zod schema to JSON Schema for structured output
   // Using zod-to-json-schema because z.toJSONSchema() is only in Zod v4 namespace
@@ -116,6 +134,7 @@ export async function runDiscoveryAgent(
   return {
     output,
     hasAmbiguities,
+    skillsUsed: skills.map((s) => s.name),
     tokensIn: result.tokensIn,
     tokensOut: result.tokensOut,
     costUsd: result.costUsd,

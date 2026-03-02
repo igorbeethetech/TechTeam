@@ -20,6 +20,8 @@ import meetingRoutes from "./routes/meetings.js"
 import stickyRoutes from "./routes/stickies.js"
 import aiSuggestionRoutes from "./routes/ai-suggestions.js"
 import beeAiRoutes from "./routes/bee-ai.js"
+import skillRoutes from "./routes/skills.js"
+import githubRoutes from "./routes/github.js"
 
 const app = Fastify({ logger: true })
 
@@ -61,6 +63,8 @@ await app.register(async (protectedApp) => {
   await protectedApp.register(stickyRoutes, { prefix: "/api/stickies" })
   await protectedApp.register(aiSuggestionRoutes, { prefix: "/api/ai-suggestions" })
   await protectedApp.register(beeAiRoutes, { prefix: "/api/bee" })
+  await protectedApp.register(skillRoutes, { prefix: "/api/skills" })
+  await protectedApp.register(githubRoutes, { prefix: "/api/github" })
   await protectedApp.register(wsRoutes)
 })
 

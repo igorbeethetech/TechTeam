@@ -5,6 +5,7 @@ import { prisma } from "./client.js"
 const TENANT_MODELS = [
   "Project", "Demand", "AgentRun", "Notification", "TenantSettings",
   "Client", "ReqsProject", "Meeting", "TranscriptChunk", "Sticky", "AISuggestion",
+  "Skill",
 ] as const
 
 export function forTenant(tenantId: string) {

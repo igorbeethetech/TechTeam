@@ -1,8 +1,10 @@
 export {
   projectCreateSchema,
   projectUpdateSchema,
+  projectInitSchema,
   type ProjectCreate,
   type ProjectUpdate,
+  type ProjectInit,
 } from "./schemas/project"
 
 export {
@@ -24,6 +26,7 @@ export {
   type MergeStatus,
   type AgentStatus,
   type AgentRun,
+  type Skill,
 } from "./types/index"
 
 export {
@@ -48,6 +51,17 @@ export {
   type PriorityLevel,
   STAGE_LABELS,
 } from "./constants/index"
+
+export {
+  skillCreateSchema,
+  skillUpdateSchema,
+  SKILL_CATEGORIES,
+  AGENT_PHASES,
+  type SkillCategory,
+  type AgentPhase,
+  type SkillCreate,
+  type SkillUpdate,
+} from "./schemas/skill"
 
 export { type WsEventType, type WsEvent } from "./types/ws-events"
 

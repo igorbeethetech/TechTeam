@@ -24,8 +24,8 @@ function getConcurrencyRedis(): IORedis {
 
 // Timeout per phase (AGENT-07 requirement)
 const PHASE_TIMEOUTS: Record<string, number> = {
-  discovery: 10 * 60 * 1000, // 10 minutes
-  planning: 10 * 60 * 1000, // 10 minutes
+  discovery: 10 * 60 * 1000, // 15 minutes
+  planning: 10 * 60 * 1000, // 15 minutes
   development: 60 * 60 * 1000, // 60 minutes
   testing: 15 * 60 * 1000, // 15 minutes
 }
@@ -111,6 +111,7 @@ export function createAgentWorker() {
           output: unknown
           hasAmbiguities?: boolean
           approved?: boolean
+          skillsUsed?: string[]
           tokensIn: number
           tokensOut: number
           costUsd: number
@@ -173,6 +174,7 @@ export function createAgentWorker() {
             tokensOut: agentResult.tokensOut,
             costUsd: agentResult.costUsd,
             durationMs: agentResult.durationMs,
+            skillsUsed: agentResult.skillsUsed ?? [],
           },
         })
         await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
@@ -477,6 +479,7 @@ async function handleDevelopmentPhase(ctx: {
           tokensOut: agentResult.tokensOut,
           costUsd: agentResult.costUsd,
           durationMs: agentResult.durationMs,
+          skillsUsed: agentResult.skillsUsed ?? [],
         },
       })
       await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
@@ -609,6 +612,7 @@ async function handleTestingPhase(ctx: {
       tokensOut: testResult.tokensOut,
       costUsd: testResult.costUsd,
       durationMs: testResult.durationMs,
+      skillsUsed: testResult.skillsUsed ?? [],
     },
   })
   await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
@@ -626,20 +630,31 @@ async function handleTestingPhase(ctx: {
 
   // 4/5. Handle verdict
   if (testResult.approved) {
-    // Approved: advance to merge and enqueue merge job
+    // Approved: advance to review for human testing (no auto-merge)
     await prisma.demand.update({
       where: { id: demandId },
-      data: { stage: "merge", agentStatus: "queued" },
+      data: { stage: "review", agentStatus: null },
     })
     await emitEvent({ type: "demand:stage-changed", tenantId, payload: { demandId, projectId } })
-    const { mergeQueue } = await import("./merge.queue.js")
-    await mergeQueue.add("merge-demand", {
-      demandId,
-      tenantId,
-      projectId,
-    })
+
+    // Notify team that demand is ready for human review
+    try {
+      await (prisma as any).notification.create({
+        data: {
+          type: "demand_ready_for_review",
+          title: "Ready for review",
+          message: `"${demand.title}" passed automated testing and is ready for human review.`,
+          demandId,
+          projectId,
+        },
+      })
+      await emitEvent({ type: "notification:created", tenantId, payload: { demandId } })
+    } catch (notifErr) {
+      console.warn("[agent-worker] Failed to create review notification:", notifErr)
+    }
+
     console.log(
-      `[agent-worker] Testing approved: demandId=${demandId}, enqueuing merge job`
+      `[agent-worker] Testing approved: demandId=${demandId}, moved to review for human testing`
     )
   } else {
     // Rejected: increment rejection count and check threshold

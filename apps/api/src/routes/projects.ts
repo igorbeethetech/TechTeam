@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
-import { projectCreateSchema, projectUpdateSchema } from "@techteam/shared"
+import { projectCreateSchema, projectUpdateSchema, projectInitSchema } from "@techteam/shared"
+import { getGithubTokenForTenant, createGithubRepo } from "../lib/github.js"
+import { cloneRepo, validateGitRepo } from "../lib/git.js"
 
 export default async function projectRoutes(fastify: FastifyInstance) {
   // GET /boards - List active projects with demand counts per stage
@@ -23,17 +25,21 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     })
 
     // Build response: each project gets a demandCounts object { stage: count }
-    const projectBoards = projects.map((project) => ({
-      id: project.id,
-      name: project.name,
-      repoUrl: project.repoUrl,
-      createdAt: project.createdAt,
-      demandCounts: Object.fromEntries(
-        demandCounts
-          .filter((dc) => dc.projectId === project.id)
-          .map((dc) => [dc.stage, dc._count.id])
-      ),
-    }))
+    // Map legacy "merge" stage counts to "review"
+    const projectBoards = projects.map((project) => {
+      const counts: Record<string, number> = {}
+      for (const dc of demandCounts.filter((dc) => dc.projectId === project.id)) {
+        const stage = dc.stage === "merge" ? "review" : dc.stage
+        counts[stage] = (counts[stage] ?? 0) + dc._count.id
+      }
+      return {
+        id: project.id,
+        name: project.name,
+        repoUrl: project.repoUrl,
+        createdAt: project.createdAt,
+        demandCounts: counts,
+      }
+    })
 
     return { projects: projectBoards }
   })
@@ -61,6 +67,97 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     const project = await request.prisma.project.create({
       data: parsed.data as any,
     })
+    return reply.status(201).send({ project })
+  })
+
+  // POST /init - Create a new project from scratch (GitHub repo + clone + DB record)
+  fastify.post("/init", async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = projectInitSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      })
+    }
+
+    const tenantId = request.session!.session.activeOrganizationId!
+    const data = parsed.data
+
+    // 1. Get GitHub token
+    let token: string
+    try {
+      token = await getGithubTokenForTenant(tenantId)
+    } catch (error) {
+      return reply.status(400).send({
+        error:
+          error instanceof Error
+            ? error.message
+            : "GitHub token not configured",
+      })
+    }
+
+    // 2. Create repository on GitHub
+    let repoResult: Awaited<ReturnType<typeof createGithubRepo>>
+    try {
+      repoResult = await createGithubRepo({
+        token,
+        orgLogin: data.orgLogin,
+        repoName: data.repoName,
+        description: data.description,
+        isPrivate: data.visibility === "private",
+      })
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { message?: string } }; message?: string }
+      const message =
+        apiError?.response?.data?.message ||
+        apiError?.message ||
+        "Failed to create GitHub repository"
+      return reply.status(502).send({ error: `GitHub: ${message}` })
+    }
+
+    // 3. Clone to local path
+    try {
+      await cloneRepo({
+        cloneUrl: repoResult.cloneUrl,
+        localPath: data.localPath,
+        token,
+      })
+    } catch (error) {
+      return reply.status(500).send({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to clone repository",
+        repoUrl: repoResult.repoUrl,
+      })
+    }
+
+    // 4. Validate the cloned repo
+    const isValid = await validateGitRepo(data.localPath)
+    if (!isValid) {
+      return reply.status(500).send({
+        error:
+          "Repository was cloned but could not be validated as a git repository",
+        repoUrl: repoResult.repoUrl,
+      })
+    }
+
+    // 5. Create Project record in database
+    const project = await request.prisma.project.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        repoUrl: repoResult.repoUrl,
+        repoPath: data.localPath,
+        defaultBranch: repoResult.defaultBranch,
+        techStack: data.techStack,
+        maxConcurrentDev: data.maxConcurrentDev,
+        mergeStrategy: data.mergeStrategy,
+        testInstructions: data.testInstructions,
+        previewUrlTemplate: data.previewUrlTemplate,
+      } as any,
+    })
+
     return reply.status(201).send({ project })
   })
 

@@ -84,6 +84,68 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // GET /dashboard - Dashboard summary stats in one call
+  fastify.get("/dashboard", async (request: FastifyRequest, reply: FastifyReply) => {
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    // Run all counts in parallel
+    const [
+      activeDemands,
+      awaitingReview,
+      completedThisWeek,
+      totalCost,
+      recentDemands,
+    ] = await Promise.all([
+      // Active demands (not done)
+      request.prisma.demand.count({
+        where: { stage: { notIn: ["done"] } },
+      }),
+      // Awaiting review
+      request.prisma.demand.count({
+        where: { stage: { in: ["review", "merge"] } },
+      }),
+      // Completed this week
+      request.prisma.demand.count({
+        where: {
+          stage: "done",
+          updatedAt: { gte: startOfWeek },
+        },
+      }),
+      // Total cost
+      request.prisma.demand.aggregate({
+        _sum: { totalCostUsd: true },
+      }),
+      // Recent activity: latest 10 demands with their latest stage
+      request.prisma.demand.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          title: true,
+          stage: true,
+          agentStatus: true,
+          priority: true,
+          updatedAt: true,
+          projectId: true,
+          project: { select: { name: true } },
+        },
+      }),
+    ])
+
+    return {
+      stats: {
+        activeDemands,
+        awaitingReview,
+        completedThisWeek,
+        totalCostUsd: totalCost._sum.totalCostUsd ?? 0,
+      },
+      recentDemands,
+    }
+  })
+
   // GET /agent-success-rate - METR-04: Agent success rate
   fastify.get("/agent-success-rate", async (request: FastifyRequest, reply: FastifyReply) => {
     const stats = await request.prisma.agentRun.groupBy({

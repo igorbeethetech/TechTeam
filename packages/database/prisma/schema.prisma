@@ -139,19 +139,21 @@ model TenantSettings {
 // === CUSTOM MODELS ===
 
 model Project {
-  id               String        @id @default(cuid())
-  tenantId         String // Maps to organization.id from Better Auth
-  name             String
-  description      String?
-  repoUrl          String
-  repoPath         String
-  defaultBranch    String        @default("main")
-  techStack        String
-  status           ProjectStatus @default(active)
-  maxConcurrentDev Int           @default(1)
-  mergeStrategy    MergeStrategy @default(fifo)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                  String        @id @default(cuid())
+  tenantId            String // Maps to organization.id from Better Auth
+  name                String
+  description         String?
+  repoUrl             String
+  repoPath            String
+  defaultBranch       String        @default("main")
+  techStack           String
+  status              ProjectStatus @default(active)
+  maxConcurrentDev    Int           @default(1)
+  mergeStrategy       MergeStrategy @default(fifo)
+  testInstructions    String?       @db.Text
+  previewUrlTemplate  String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   demands          Demand[]
   notifications    Notification[]
@@ -213,7 +215,8 @@ enum DemandStage {
   planning
   development
   testing
-  merge
+  review
+  merge // @deprecated - kept for backward compat with historical data
   done
 }
 
@@ -263,6 +266,7 @@ model AgentRun {
   output     Json?
   error      String?     @db.Text
   attempt    Int         @default(1)
+  skillsUsed String[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -273,12 +277,34 @@ model AgentRun {
   @@index([demandId, phase])
 }
 
+// === SKILLS ===
+
+model Skill {
+  id               String   @id @default(cuid())
+  tenantId         String?
+  name             String
+  description      String
+  instructions     String   @db.Text
+  tags             String[]
+  applicablePhases String[]
+  category         String
+  enabled          Boolean  @default(true)
+  isDefault        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, enabled])
+}
+
 // === NOTIFICATIONS ===
 
 enum NotificationType {
   agent_failed
   merge_needs_human
   demand_done
+  demand_ready_for_review
+  demand_rejected
 }
 
 model Notification {

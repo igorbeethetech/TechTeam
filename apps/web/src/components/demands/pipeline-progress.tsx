@@ -1,14 +1,16 @@
 "use client"
 
-import { PIPELINE_STAGES, STAGE_LABELS, type PipelineStage } from "@techteam/shared"
+import { PIPELINE_STAGES, STAGE_LABELS, type PipelineStage, type DemandStage } from "@techteam/shared"
 import { cn } from "@/lib/utils"
 
 interface PipelineProgressProps {
-  currentStage: PipelineStage
+  currentStage: DemandStage
 }
 
 export function PipelineProgress({ currentStage }: PipelineProgressProps) {
-  const currentIndex = PIPELINE_STAGES.indexOf(currentStage)
+  // Map legacy "merge" stage to "review" for display
+  const displayStage: PipelineStage = currentStage === "merge" ? "review" : currentStage as PipelineStage
+  const currentIndex = PIPELINE_STAGES.indexOf(displayStage)
 
   return (
     <div className="w-full space-y-2">

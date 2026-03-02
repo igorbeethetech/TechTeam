@@ -14,7 +14,7 @@ export const PIPELINE_STAGES = [
   "planning",
   "development",
   "testing",
-  "merge",
+  "review",
   "done",
 ] as const
 
@@ -30,6 +30,6 @@ export const STAGE_LABELS: Record<PipelineStage, string> = {
   planning: "Planning",
   development: "Development",
   testing: "Testing",
-  merge: "Merge",
+  review: "Review",
   done: "Done",
 }

@@ -2,6 +2,7 @@ import { zodToJsonSchema } from "zod-to-json-schema"
 import { executeAgentAuto } from "./agent-router.js"
 import { testingOutputSchema, type TestingOutput } from "@techteam/shared"
 import { prisma } from "@techteam/database"
+import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
 
 /**
  * Builds the system + user prompt for the Testing agent.
@@ -18,7 +19,8 @@ function buildTestingPrompt(
     defaultBranch: string
   },
   plan: unknown,
-  requirements: unknown
+  requirements: unknown,
+  skillsSection: string
 ): string {
   const parts: string[] = []
 
@@ -59,6 +61,10 @@ function buildTestingPrompt(
     ].join("\n")
   )
 
+  if (skillsSection) {
+    parts.push(skillsSection)
+  }
+
   parts.push(
     [
       `## Review Instructions`,
@@ -95,6 +101,7 @@ export interface TestingAgentParams {
 export interface TestingAgentResult {
   output: TestingOutput
   approved: boolean
+  skillsUsed: string[]
   tokensIn: number
   tokensOut: number
   costUsd: number
@@ -142,12 +149,23 @@ export async function runTestingAgent(
     where: { id: projectId },
   })
 
+  // Match relevant skills for this phase
+  const skills = await matchSkills({
+    tenantId,
+    phase: "testing",
+    demandTitle: demand.title,
+    demandDescription: demand.description,
+    techStack: project.techStack,
+  })
+  const skillsSection = buildSkillsPromptSection(skills)
+
   // Build contextual prompt with plan, requirements, and review instructions
   const prompt = buildTestingPrompt(
     demand,
     project,
     demand.plan,
-    demand.requirements
+    demand.requirements,
+    skillsSection
   )
 
   // Convert Zod schema to JSON Schema for structured output
@@ -171,6 +189,7 @@ export async function runTestingAgent(
   return {
     output,
     approved: output.verdict === "approved",
+    skillsUsed: skills.map((s) => s.name),
     tokensIn: result.tokensIn,
     tokensOut: result.tokensOut,
     costUsd: result.costUsd,

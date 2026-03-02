@@ -1,4 +1,5 @@
 import path from "node:path"
+import fs from "node:fs"
 import simpleGit, { GitResponseError, type SimpleGit } from "simple-git"
 
 export function createGitClient(repoPath: string): SimpleGit {
@@ -164,7 +165,7 @@ export async function injectGitToken(
   token: string
 ): Promise<string> {
   const git = createGitClient(repoPath)
-  const rawUrl = await git.remote(["get-url", "origin"])
+  const rawUrl = await git.remote(["get-url", "origin"]) ?? ""
   // Sanitize: trim whitespace, strip literal \n escape sequences, remove control chars
   const originalUrl = rawUrl.replace(/\\n/g, "").replace(/[\r\n]+/g, "").trim()
   if (!originalUrl) {
@@ -196,4 +197,34 @@ export async function restoreGitRemote(
   const git = createGitClient(repoPath)
   const sanitizedUrl = originalUrl.replace(/\\n/g, "").replace(/[\r\n]+/g, "").trim()
   await git.remote(["set-url", "origin", sanitizedUrl])
+}
+
+/**
+ * Clone a GitHub repository to a local path.
+ * Injects the token into the HTTPS URL for authentication (private repos).
+ * The target directory must NOT already exist.
+ */
+export async function cloneRepo(params: {
+  cloneUrl: string
+  localPath: string
+  token: string
+}): Promise<void> {
+  const { cloneUrl, localPath, token } = params
+
+  if (fs.existsSync(localPath)) {
+    throw new Error(`Target path already exists: ${localPath}`)
+  }
+
+  // Inject token into URL for authentication
+  const match = cloneUrl.match(/github\.com\/([^/]+)\/([^/.]+)/)
+  if (!match) {
+    throw new Error(`Cannot parse GitHub owner/repo from clone URL: ${cloneUrl}`)
+  }
+  const [, owner, repo] = match
+  const sanitizedToken = token.replace(/[\r\n\s]+/g, "")
+  const authenticatedUrl = `https://x-access-token:${sanitizedToken}@github.com/${owner}/${repo}.git`
+
+  // Clone into new directory (no baseDir needed)
+  const git = simpleGit()
+  await git.clone(authenticatedUrl, localPath)
 }

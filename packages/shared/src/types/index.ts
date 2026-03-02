@@ -14,11 +14,13 @@ export interface Project {
   status: ProjectStatus
   maxConcurrentDev: number
   mergeStrategy: MergeStrategy
+  testInstructions: string | null
+  previewUrlTemplate: string | null
   createdAt: Date
   updatedAt: Date
 }
 
-export type DemandStage = "inbox" | "discovery" | "planning" | "development" | "testing" | "merge" | "done"
+export type DemandStage = "inbox" | "discovery" | "planning" | "development" | "testing" | "review" | "merge" | "done"
 
 export type DemandPriority = "low" | "medium" | "high" | "urgent"
 
@@ -72,6 +74,22 @@ export interface AgentRun {
   output: unknown
   error: string | null
   attempt: number
+  skillsUsed: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Skill {
+  id: string
+  tenantId: string | null
+  name: string
+  description: string
+  instructions: string
+  tags: string[]
+  applicablePhases: string[]
+  category: string
+  enabled: boolean
+  isDefault: boolean
   createdAt: Date
   updatedAt: Date
 }
