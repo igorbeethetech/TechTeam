@@ -82,12 +82,12 @@ export function ProjectForm({ project }: ProjectFormProps) {
           name: project.name,
           description: project.description ?? undefined,
           repoUrl: project.repoUrl,
-          repoPath: project.repoPath,
           techStack: project.techStack,
           maxConcurrentDev: project.maxConcurrentDev,
           mergeStrategy: project.mergeStrategy,
           testInstructions: project.testInstructions ?? undefined,
           previewUrlTemplate: project.previewUrlTemplate ?? undefined,
+          databaseUrl: project.databaseUrl ?? undefined,
         }
       : {
           maxConcurrentDev: 1,
@@ -104,7 +104,6 @@ export function ProjectForm({ project }: ProjectFormProps) {
       visibility: "private",
       orgLogin: "",
       repoName: "",
-      localPath: "",
     },
   })
 
@@ -398,21 +397,6 @@ export function ProjectForm({ project }: ProjectFormProps) {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="ex-repoPath">Caminho Local do Repositório *</Label>
-            <Input
-              id="ex-repoPath"
-              placeholder="C:\Dev\projects\my-repo"
-              {...existingForm.register("repoPath")}
-              aria-invalid={!!existingForm.formState.errors.repoPath}
-            />
-            {existingForm.formState.errors.repoPath && (
-              <p className="text-sm text-destructive">
-                {existingForm.formState.errors.repoPath.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="ex-techStack">Tech Stack *</Label>
             <Input
               id="ex-techStack"
@@ -577,26 +561,6 @@ export function ProjectForm({ project }: ProjectFormProps) {
             </RadioGroup>
           </div>
 
-          {/* Local Path */}
-          <div className="space-y-2">
-            <Label htmlFor="init-localPath">Caminho Local para Clone *</Label>
-            <Input
-              id="init-localPath"
-              placeholder="C:\Dev\meu-novo-projeto"
-              {...initForm.register("localPath")}
-              aria-invalid={!!initForm.formState.errors.localPath}
-            />
-            <p className="text-xs text-muted-foreground">
-              O diretório não deve existir. Será criado automaticamente durante
-              o clone.
-            </p>
-            {initForm.formState.errors.localPath && (
-              <p className="text-sm text-destructive">
-                {initForm.formState.errors.localPath.message}
-              </p>
-            )}
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="init-techStack">Tech Stack *</Label>
             <Input
@@ -723,6 +687,20 @@ function SharedFields({
         />
         <p className="text-xs text-muted-foreground">
           Instruções exibidas aos testadores durante a etapa de Review.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="databaseUrl">URL do Banco de Dados</Label>
+        <Input
+          id="databaseUrl"
+          type="password"
+          placeholder="postgresql://user:password@host:5432/database"
+          {...form.register("databaseUrl")}
+        />
+        <p className="text-xs text-muted-foreground">
+          String de conexão PostgreSQL do projeto (ex: Supabase). Usado pelo agente de Discovery
+          para introspectar o schema e evitar perguntas sobre estrutura existente.
         </p>
       </div>
     </>

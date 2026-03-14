@@ -13,6 +13,7 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
       _count: { id: true },
       where: {
         createdAt: { gte: startOfMonth },
+        cancelledAt: null,
       },
     })
 
@@ -49,6 +50,7 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
       WHERE "tenantId" = ${tenantId}
         AND "stage" = 'done'
         AND "completedAt" IS NOT NULL
+        AND "cancelledAt" IS NULL
         AND "completedAt" >= NOW() - INTERVAL '12 weeks'
       GROUP BY year, week
       ORDER BY year, week
@@ -99,27 +101,30 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
       totalCost,
       recentDemands,
     ] = await Promise.all([
-      // Active demands (not done)
+      // Active demands (not done, not cancelled)
       request.prisma.demand.count({
-        where: { stage: { notIn: ["done"] } },
+        where: { stage: { notIn: ["done"] }, cancelledAt: null },
       }),
       // Awaiting review
       request.prisma.demand.count({
-        where: { stage: { in: ["review", "merge"] } },
+        where: { stage: { in: ["review", "merge"] }, cancelledAt: null },
       }),
       // Completed this week
       request.prisma.demand.count({
         where: {
           stage: "done",
+          cancelledAt: null,
           updatedAt: { gte: startOfWeek },
         },
       }),
-      // Total cost
+      // Total cost (exclude cancelled)
       request.prisma.demand.aggregate({
         _sum: { totalCostUsd: true },
+        where: { cancelledAt: null },
       }),
-      // Recent activity: latest 10 demands with their latest stage
+      // Recent activity: latest 10 demands (exclude cancelled)
       request.prisma.demand.findMany({
+        where: { cancelledAt: null },
         orderBy: { updatedAt: "desc" },
         take: 10,
         select: {

@@ -3,6 +3,7 @@ import { executeAgentAuto } from "./agent-router.js"
 import { testingOutputSchema, type TestingOutput } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
+import { getLanguageInstruction, getTenantLanguage } from "../lib/i18n.js"
 
 /**
  * Builds the system + user prompt for the Testing agent.
@@ -159,6 +160,10 @@ export async function runTestingAgent(
   })
   const skillsSection = buildSkillsPromptSection(skills)
 
+  // Fetch tenant language for i18n
+  const language = await getTenantLanguage(tenantId)
+  const languageInstruction = getLanguageInstruction(language)
+
   // Build contextual prompt with plan, requirements, and review instructions
   const prompt = buildTestingPrompt(
     demand,
@@ -171,19 +176,32 @@ export async function runTestingAgent(
   // Convert Zod schema to JSON Schema for structured output
   const jsonSchema = zodToJsonSchema(testingOutputSchema)
 
+  // Build system prompt with language instruction
+  const baseSystemPrompt = "You are a code reviewer. Do NOT modify any files. Only read and analyze."
+  const systemPrompt = languageInstruction
+    ? `${baseSystemPrompt}\n\n${languageInstruction}`
+    : baseSystemPrompt
+
   // Call the AI agent with read-only tools + Bash (for running tests)
   const result = await executeAgentAuto(tenantId, {
+    demandId,
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,
     cwd: project.repoPath,
     allowedTools: ["Read", "Glob", "Grep", "Bash"],
     maxTurns: 20,
-    systemPrompt:
-      "You are a code reviewer. Do NOT modify any files. Only read and analyze.",
+    systemPrompt,
   })
 
   // Parse structured output
+  if (result.output === undefined || result.output === null) {
+    throw new Error(
+      `Testing agent returned empty output (${typeof result.output}). ` +
+        `This usually means the CLI did not produce structured JSON. ` +
+        `CostUsd=${result.costUsd}, DurationMs=${result.durationMs}`
+    )
+  }
   const output = testingOutputSchema.parse(result.output)
 
   return {

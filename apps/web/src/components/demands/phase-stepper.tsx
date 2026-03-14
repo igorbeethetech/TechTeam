@@ -4,14 +4,13 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useWsStatus } from "@/hooks/use-websocket"
 import {
-  PIPELINE_STAGES,
-  STAGE_LABELS,
   type PipelineStage,
   type DemandStage,
   type AgentRun,
 } from "@techteam/shared"
 import { CheckCircle2, Circle, Loader2, XCircle, Pause } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/i18n/language-context"
 import {
   Tooltip,
   TooltipContent,
@@ -125,6 +124,7 @@ export function PhaseStepper({
   agentStatus,
   isAgentActive,
 }: PhaseStepperProps) {
+  const { t } = useTranslation()
   const wsStatus = useWsStatus()
 
   const { data } = useQuery({
@@ -172,30 +172,30 @@ export function PhaseStepper({
                             : "text-muted-foreground"
                     )}
                   >
-                    {STAGE_LABELS[phase.stage]}
+                    {t(`stages.${phase.stage}`)}
                   </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-xs">
                   <p className="font-medium">
-                    {STAGE_LABELS[phase.stage]} -{" "}
+                    {t(`stages.${phase.stage}`)} -{" "}
                     {phase.status === "completed"
-                      ? "Completed"
+                      ? t("phaseStepper.completed")
                       : phase.status === "running"
-                        ? "In Progress"
+                        ? t("phaseStepper.inProgress")
                         : phase.status === "failed"
-                          ? "Failed"
+                          ? t("phaseStepper.failed")
                           : phase.status === "paused"
-                            ? "Paused"
-                            : "Pending"}
+                            ? t("phaseStepper.paused")
+                            : t("phaseStepper.pending")}
                   </p>
                   {phase.durationMs > 0 && (
-                    <p>Duration: {formatDuration(phase.durationMs)}</p>
+                    <p>{t("phaseStepper.duration")}: {formatDuration(phase.durationMs)}</p>
                   )}
                   {phase.attempts > 0 && (
                     <p>
-                      {phase.attempts} run{phase.attempts !== 1 ? "s" : ""}
+                      {phase.attempts} {t("phaseStepper.runs")}
                     </p>
                   )}
                 </div>

@@ -16,6 +16,7 @@ export interface Project {
   mergeStrategy: MergeStrategy
   testInstructions: string | null
   previewUrlTemplate: string | null
+  databaseUrl: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -36,6 +37,7 @@ export interface Demand {
   requirements: unknown
   plan: unknown
   branchName: string | null
+  baseBranch: string | null
   prUrl: string | null
   rejectionCount: number
   testingFeedback: unknown
@@ -45,6 +47,7 @@ export interface Demand {
   totalTokens: number
   totalCostUsd: number
   agentStatus: string | null
+  cancelledAt: Date | string | null
   createdBy: string
   createdAt: Date
   updatedAt: Date
@@ -60,6 +63,7 @@ export type AgentStatus =
   | "failed"
   | "timeout"
   | "paused"
+  | "cancelled"
 
 export interface AgentRun {
   id: string
@@ -67,6 +71,7 @@ export interface AgentRun {
   demandId: string
   phase: DemandStage
   status: AgentStatus
+  jobId: string | null
   tokensIn: number
   tokensOut: number
   costUsd: number

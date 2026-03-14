@@ -24,3 +24,8 @@ export const agentQueue = new Queue<AgentJobData, AgentJobResult>(
     },
   }
 )
+
+/** Generate a deterministic job ID for tracking and cancellation. */
+export function makeAgentJobId(demandId: string, phase: string): string {
+  return `agent-${demandId}-${phase}-${Date.now()}`
+}

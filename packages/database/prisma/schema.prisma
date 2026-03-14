@@ -152,6 +152,7 @@ model Project {
   mergeStrategy       MergeStrategy @default(fifo)
   testInstructions    String?       @db.Text
   previewUrlTemplate  String?
+  databaseUrl         String?       @db.Text
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
@@ -185,6 +186,7 @@ model Demand {
   requirements    Json?
   plan            Json?
   branchName      String?
+  baseBranch      String?
   prUrl           String?
   rejectionCount  Int            @default(0)
   testingFeedback Json?
@@ -197,6 +199,7 @@ model Demand {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   completedAt     DateTime?
+  cancelledAt     DateTime?
 
   agentStatus     String?
   project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -207,6 +210,7 @@ model Demand {
   @@index([projectId])
   @@index([stage])
   @@index([projectId, stage])
+  @@index([cancelledAt])
 }
 
 enum DemandStage {
@@ -251,6 +255,7 @@ enum AgentStatus {
   failed
   timeout
   paused
+  cancelled
 }
 
 model AgentRun {
@@ -259,6 +264,7 @@ model AgentRun {
   demandId   String
   phase      DemandStage
   status     AgentStatus
+  jobId      String?
   tokensIn   Int         @default(0)
   tokensOut  Int         @default(0)
   costUsd    Float       @default(0)
@@ -305,6 +311,7 @@ enum NotificationType {
   demand_done
   demand_ready_for_review
   demand_rejected
+  demand_cancelled
 }
 
 model Notification {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { useSession, signOut } from "@/lib/auth-client"
 import { api } from "@/lib/api"
+import { useTranslation } from "@/i18n/language-context"
 import {
   Sidebar,
   SidebarContent,
@@ -32,12 +33,12 @@ import {
 } from "lucide-react"
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Boards", href: "/boards", icon: Kanban },
-  { label: "Projects", href: "/projects", icon: FolderOpen },
-  { label: "Skills", href: "/skills", icon: Sparkles },
-  { label: "Metrics", href: "/metrics", icon: BarChart3 },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { labelKey: "sidebar.dashboard" as const, href: "/", icon: LayoutDashboard },
+  { labelKey: "sidebar.boards" as const, href: "/boards", icon: Kanban },
+  { labelKey: "sidebar.projects" as const, href: "/projects", icon: FolderOpen },
+  { labelKey: "sidebar.skills" as const, href: "/skills", icon: Sparkles },
+  { labelKey: "sidebar.metrics" as const, href: "/metrics", icon: BarChart3 },
+  { labelKey: "sidebar.settings" as const, href: "/settings", icon: Settings },
 ]
 
 function isNavActive(pathname: string, href: string): boolean {
@@ -46,6 +47,7 @@ function isNavActive(pathname: string, href: string): boolean {
 }
 
 export function AppSidebar() {
+  const { t } = useTranslation()
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
@@ -86,7 +88,7 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Main navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV_ITEMS.map((item) => (
@@ -94,11 +96,11 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={isNavActive(pathname, item.href)}
-                    tooltip={item.label}
+                    tooltip={t(item.labelKey)}
                   >
                     <Link href={item.href} onClick={handleNavClick}>
                       <item.icon />
-                      <span>{item.label}</span>
+                      <span>{t(item.labelKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -109,7 +111,7 @@ export function AppSidebar() {
 
         {/* Project switcher */}
         <SidebarGroup>
-          <SidebarGroupLabel>Projects</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.projects")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {isLoading ? (
@@ -120,7 +122,7 @@ export function AppSidebar() {
                 </>
               ) : projects.length === 0 ? (
                 <li className="px-2 py-1.5 text-xs text-muted-foreground">
-                  No projects yet
+                  {t("sidebar.noProjects")}
                 </li>
               ) : (
                 projects.map((project) => (
@@ -155,9 +157,9 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+            <SidebarMenuButton onClick={handleLogout} tooltip={t("sidebar.logout")}>
               <LogOut />
-              <span>Logout</span>
+              <span>{t("sidebar.logout")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

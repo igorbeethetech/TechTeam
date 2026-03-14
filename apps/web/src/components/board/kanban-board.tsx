@@ -4,7 +4,6 @@ import { useCallback, useMemo } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   PIPELINE_STAGES,
-  STAGE_LABELS,
   type PipelineStage,
   type DemandPriority,
   type DemandStage,
@@ -31,6 +30,7 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/i18n/language-context"
 import type { UniqueIdentifier } from "@dnd-kit/core"
 
 interface DemandItem {
@@ -60,14 +60,24 @@ const COLUMN_ICONS: Record<PipelineStage, typeof Inbox> = {
   done: CheckCircle2,
 }
 
-const COLUMN_EMPTY_MESSAGES: Record<PipelineStage, string> = {
-  inbox: "No demands yet",
-  discovery: "No demands being analyzed",
-  planning: "No demands being planned",
-  development: "No demands in development",
-  testing: "No demands being tested",
-  review: "No demands awaiting review",
-  done: "No completed demands",
+const COLUMN_EMPTY_KEYS: Record<PipelineStage, string> = {
+  inbox: "board.emptyInbox",
+  discovery: "board.emptyDiscovery",
+  planning: "board.emptyPlanning",
+  development: "board.emptyDevelopment",
+  testing: "board.emptyTesting",
+  review: "board.emptyReview",
+  done: "board.emptyDone",
+}
+
+const STAGE_LABEL_KEYS: Record<PipelineStage, string> = {
+  inbox: "stages.inbox",
+  discovery: "stages.discovery",
+  planning: "stages.planning",
+  development: "stages.development",
+  testing: "stages.testing",
+  review: "stages.review",
+  done: "stages.done",
 }
 
 function groupByStage(demands: DemandItem[]): BoardColumns {
@@ -83,6 +93,7 @@ function groupByStage(demands: DemandItem[]): BoardColumns {
 }
 
 function BoardStats({ demands }: { demands: DemandItem[] }) {
+  const { t } = useTranslation()
   const total = demands.length
   const inProgress = demands.filter((d) =>
     ["discovery", "planning", "development", "testing"].includes(d.stage)
@@ -97,12 +108,12 @@ function BoardStats({ demands }: { demands: DemandItem[] }) {
   return (
     <div className="flex flex-wrap items-center gap-4 px-1 pb-3 text-sm">
       <span className="text-muted-foreground">
-        <span className="font-semibold text-foreground">{total}</span> total
+        <span className="font-semibold text-foreground">{total}</span> {t("board.total")}
       </span>
       {inProgress > 0 && (
         <span className="text-muted-foreground">
-          <span className="font-semibold text-blue-600">{inProgress}</span> in
-          progress
+          <span className="font-semibold text-blue-600">{inProgress}</span>{" "}
+          {t("board.inProgress")}
         </span>
       )}
       {awaitingReview > 0 && (
@@ -110,12 +121,12 @@ function BoardStats({ demands }: { demands: DemandItem[] }) {
           <span className="font-semibold text-amber-600">
             {awaitingReview}
           </span>{" "}
-          awaiting review
+          {t("board.awaitingReview")}
         </span>
       )}
       {done > 0 && (
         <span className="text-muted-foreground">
-          <span className="font-semibold text-green-600">{done}</span> done
+          <span className="font-semibold text-green-600">{done}</span> {t("board.done")}
         </span>
       )}
     </div>
@@ -124,6 +135,7 @@ function BoardStats({ demands }: { demands: DemandItem[] }) {
 
 export function KanbanBoardView({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const wsStatus = useWsStatus()
 
   // Fetch demands -- WS events invalidate when connected, poll as fallback
@@ -261,7 +273,7 @@ export function KanbanBoardView({ projectId }: { projectId: string }) {
                           isReview && "text-amber-800"
                         )}
                       >
-                        {STAGE_LABELS[stage]}
+                        {t(STAGE_LABEL_KEYS[stage] as any)}
                       </h3>
                       <Badge
                         variant="secondary"
@@ -278,7 +290,7 @@ export function KanbanBoardView({ projectId }: { projectId: string }) {
                     <div className="flex flex-col gap-2 p-2 min-h-[120px]">
                       {count === 0 ? (
                         <p className="py-6 text-center text-xs text-muted-foreground">
-                          {COLUMN_EMPTY_MESSAGES[stage]}
+                          {t(COLUMN_EMPTY_KEYS[stage] as any)}
                         </p>
                       ) : (
                         (columns[stage] ?? []).map((demand) => (

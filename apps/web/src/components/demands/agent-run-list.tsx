@@ -24,6 +24,7 @@ import type {
   TestingOutput,
 } from "@techteam/shared"
 import { useState } from "react"
+import { useTranslation } from "@/i18n/language-context"
 
 const PHASE_COLORS: Record<string, string> = {
   discovery: "bg-violet-100 text-violet-700 hover:bg-violet-100",
@@ -40,6 +41,7 @@ const STATUS_COLORS: Record<string, string> = {
   failed: "bg-red-100 text-red-700 hover:bg-red-100",
   timeout: "bg-orange-100 text-orange-700 hover:bg-orange-100",
   paused: "bg-yellow-100 text-yellow-700 hover:bg-yellow-100",
+  cancelled: "bg-gray-100 text-gray-500 hover:bg-gray-100",
 }
 
 function formatDuration(ms: number): string {
@@ -305,6 +307,7 @@ interface AgentRunsResponse {
 }
 
 export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
+  const { t } = useTranslation()
   const wsStatus = useWsStatus()
 
   const { data, isLoading } = useQuery({
@@ -332,7 +335,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
   if (isLoading) {
     return (
       <div className="rounded-lg border p-4">
-        <p className="text-sm text-muted-foreground">Loading agent runs...</p>
+        <p className="text-sm text-muted-foreground">{t("agentRuns.loading")}</p>
       </div>
     )
   }
@@ -342,7 +345,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
   if (runs.length === 0) {
     return (
       <div className="rounded-lg border p-4">
-        <p className="text-sm text-muted-foreground">No agent runs yet</p>
+        <p className="text-sm text-muted-foreground">{t("agentRuns.noRuns")}</p>
       </div>
     )
   }
@@ -355,7 +358,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
           run.output && typeof run.output === "object" && run.status === "completed"
         )
         const hasError = !!(
-          run.error && (run.status === "failed" || run.status === "timeout")
+          run.error && (run.status === "failed" || run.status === "timeout" || run.status === "cancelled")
         )
         const hasTokens = run.tokensIn > 0 || run.tokensOut > 0
 
@@ -379,7 +382,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
                     PHASE_COLORS[run.phase] ?? "bg-gray-100 text-gray-700"
                   }
                 >
-                  {run.phase}
+                  {t(`stages.${run.phase as "discovery" | "planning" | "development" | "testing"}`)}
                 </Badge>
                 <Badge
                   className={
@@ -390,7 +393,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
                 </Badge>
                 {run.attempt > 1 && (
                   <Badge variant="outline" className="text-xs">
-                    Attempt {run.attempt}/3
+                    {t("agentRuns.attempt")} {run.attempt}/3
                   </Badge>
                 )}
                 {run.skillsUsed && run.skillsUsed.length > 0 && (
@@ -444,12 +447,12 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
                 {hasTokens && (
                   <div className="flex gap-4 text-xs text-muted-foreground">
                     <span>
-                      Tokens in: {run.tokensIn.toLocaleString()}
+                      {t("agentRuns.tokensIn")}: {run.tokensIn.toLocaleString()}
                     </span>
                     <span>
-                      Tokens out: {run.tokensOut.toLocaleString()}
+                      {t("agentRuns.tokensOut")}: {run.tokensOut.toLocaleString()}
                     </span>
-                    <span>Cost: ${run.costUsd.toFixed(4)} USD</span>
+                    <span>{t("agentRuns.cost")}: ${run.costUsd.toFixed(4)} USD</span>
                   </div>
                 )}
 
@@ -466,7 +469,7 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
                     <div className="flex items-center gap-1.5 mb-1">
                       <AlertCircle className="size-3.5 text-red-600" />
                       <span className="text-xs font-medium text-red-700">
-                        Error
+                        {t("agentRuns.error")}
                       </span>
                     </div>
                     <pre className="overflow-auto text-xs text-red-700 whitespace-pre-wrap">
@@ -478,8 +481,8 @@ export function AgentRunList({ demandId, isAgentActive }: AgentRunListProps) {
                 {!hasOutput && !hasError && (
                   <p className="text-xs text-muted-foreground">
                     {run.status === "running" || run.status === "queued"
-                      ? "Agent is currently executing..."
-                      : "No output available"}
+                      ? t("agentRuns.executing")
+                      : t("agentRuns.noOutput")}
                   </p>
                 )}
               </div>

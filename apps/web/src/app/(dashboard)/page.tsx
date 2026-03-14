@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { api } from "@/lib/api"
+import { useTranslation } from "@/i18n/language-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -63,6 +64,7 @@ const STAGE_BADGE_COLORS: Record<string, string> = {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const { data: session } = useSession()
 
   const { data: projectsData } = useQuery({
@@ -88,10 +90,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Dashboard</h2>
+          <h2 className="text-2xl font-bold">{t("dashboard.title")}</h2>
           {session?.user && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Welcome, {session.user.name}
+              {t("dashboard.welcome", { name: session.user.name ?? "" })}
             </p>
           )}
         </div>
@@ -99,7 +101,7 @@ export default function DashboardPage() {
           <Button variant="outline" size="sm" asChild>
             <Link href="/projects">
               <FolderOpen className="size-4" />
-              Projects
+              {t("sidebar.projects")}
             </Link>
           </Button>
         </div>
@@ -110,7 +112,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Demands
+              {t("dashboard.activeDemands")}
             </CardTitle>
             <Activity className="size-4 text-muted-foreground" />
           </CardHeader>
@@ -124,7 +126,7 @@ export default function DashboardPage() {
         <Card className={reviewDemands.length > 0 ? "ring-1 ring-amber-200" : ""}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Awaiting Review
+              {t("dashboard.awaitingReview")}
             </CardTitle>
             <ClipboardCheck className="size-4 text-amber-500" />
           </CardHeader>
@@ -138,7 +140,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed This Week
+              {t("dashboard.completedThisWeek")}
             </CardTitle>
             <TrendingUp className="size-4 text-green-500" />
           </CardHeader>
@@ -152,7 +154,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Cost
+              {t("dashboard.totalCost")}
             </CardTitle>
             <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
@@ -170,13 +172,13 @@ export default function DashboardPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardCheck className="size-4 text-amber-500" />
-              Awaiting Human Review
+              {t("dashboard.awaitingHumanReview")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {reviewDemands.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
-                No demands awaiting review
+                {t("dashboard.noDemandsAwaitingReview")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -210,13 +212,13 @@ export default function DashboardPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Activity className="size-4" />
-              Recent Activity
+              {t("dashboard.recentActivity")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {recentDemands.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
-                No recent activity
+                {t("dashboard.noRecentActivity")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -254,7 +256,7 @@ export default function DashboardPage() {
       {/* Project Boards */}
       {projects.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold">Project Boards</h3>
+          <h3 className="text-lg font-semibold">{t("dashboard.projectBoards")}</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <Card key={project.id}>
@@ -268,7 +270,7 @@ export default function DashboardPage() {
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/projects/${project.id}/board`}>
                       <Kanban className="size-4" />
-                      Board
+                      {t("dashboard.viewBoard")}
                     </Link>
                   </Button>
                 </CardContent>
@@ -282,11 +284,11 @@ export default function DashboardPage() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-10 gap-3">
             <FolderOpen className="size-10 text-muted-foreground" />
-            <p className="text-muted-foreground">No projects yet</p>
+            <p className="text-muted-foreground">{t("dashboard.noProjectsYet")}</p>
             <Button asChild>
               <Link href="/projects/new">
                 <Plus className="size-4" />
-                Create your first project
+                {t("dashboard.createFirstProject")}
               </Link>
             </Button>
           </CardContent>

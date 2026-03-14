@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { projectCreateSchema, projectUpdateSchema, projectInitSchema } from "@techteam/shared"
 import { getGithubTokenForTenant, createGithubRepo } from "../lib/github.js"
-import { cloneRepo, validateGitRepo } from "../lib/git.js"
+import { ensureRepoReady, getRepoLocalPath, createGitClient } from "../lib/git.js"
 
 export default async function projectRoutes(fastify: FastifyInstance) {
   // GET /boards - List active projects with demand counts per stage
@@ -21,6 +21,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       _count: { id: true },
       where: {
         projectId: { in: projects.map((p) => p.id) },
+        cancelledAt: null,
       },
     })
 
@@ -53,7 +54,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     return { projects }
   })
 
-  // POST / - Create a new project
+  // POST / - Create a new project (existing repo)
   fastify.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
     const parsed = projectCreateSchema.safeParse(request.body)
     if (!parsed.success) {
@@ -63,9 +64,46 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       })
     }
 
-    // tenantId is automatically injected by the forTenant() extension
+    const tenantId = request.session!.session.activeOrganizationId!
+    const data = parsed.data
+
+    // Compute deterministic local path
+    const repoPath = getRepoLocalPath(tenantId, data.repoUrl)
+
+    // Get GitHub token
+    let token: string
+    try {
+      token = await getGithubTokenForTenant(tenantId)
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error ? error.message : "GitHub token not configured",
+      })
+    }
+
+    // Clone or update the repo
+    try {
+      await ensureRepoReady({ repoPath, repoUrl: data.repoUrl, defaultBranch: "main", token })
+    } catch (error) {
+      return reply.status(500).send({
+        error: error instanceof Error ? error.message : "Failed to prepare repository",
+      })
+    }
+
+    // Detect real default branch from the cloned repo
+    let defaultBranch = "main"
+    try {
+      const git = createGitClient(repoPath)
+      const remoteInfo = await git.remote(["show", "origin"])
+      const match = remoteInfo?.match(/HEAD branch:\s*(\S+)/)
+      if (match) {
+        defaultBranch = match[1]
+      }
+    } catch {
+      // Fall back to "main"
+    }
+
     const project = await request.prisma.project.create({
-      data: parsed.data as any,
+      data: { ...data, repoPath, defaultBranch } as any,
     })
     return reply.status(201).send({ project })
   })
@@ -115,11 +153,13 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       return reply.status(502).send({ error: `GitHub: ${message}` })
     }
 
-    // 3. Clone to local path
+    // 3. Compute local path and clone
+    const repoPath = getRepoLocalPath(tenantId, repoResult.repoUrl)
     try {
-      await cloneRepo({
-        cloneUrl: repoResult.cloneUrl,
-        localPath: data.localPath,
+      await ensureRepoReady({
+        repoPath,
+        repoUrl: repoResult.repoUrl,
+        defaultBranch: repoResult.defaultBranch,
         token,
       })
     } catch (error) {
@@ -132,33 +172,145 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       })
     }
 
-    // 4. Validate the cloned repo
-    const isValid = await validateGitRepo(data.localPath)
-    if (!isValid) {
-      return reply.status(500).send({
-        error:
-          "Repository was cloned but could not be validated as a git repository",
-        repoUrl: repoResult.repoUrl,
-      })
-    }
-
-    // 5. Create Project record in database
+    // 4. Create Project record in database
     const project = await request.prisma.project.create({
       data: {
         name: data.name,
         description: data.description,
         repoUrl: repoResult.repoUrl,
-        repoPath: data.localPath,
+        repoPath,
         defaultBranch: repoResult.defaultBranch,
         techStack: data.techStack,
         maxConcurrentDev: data.maxConcurrentDev,
         mergeStrategy: data.mergeStrategy,
         testInstructions: data.testInstructions,
         previewUrlTemplate: data.previewUrlTemplate,
+        databaseUrl: data.databaseUrl,
       } as any,
     })
 
     return reply.status(201).send({ project })
+  })
+
+  // POST /:id/sync - Sync repository (fetch + pull)
+  fastify.post("/:id/sync", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    console.log(`[sync] Syncing project ${id}`)
+    const project = await request.prisma.project.findUnique({ where: { id } })
+    if (!project) {
+      return reply.status(404).send({ error: "Project not found" })
+    }
+
+    // Check for active agents
+    const activeDemands = await request.prisma.demand.count({
+      where: {
+        projectId: id,
+        agentStatus: { in: ["running", "queued"] },
+        cancelledAt: null,
+      },
+    })
+    if (activeDemands > 0) {
+      return reply.status(409).send({
+        error: "Cannot sync while agents are running. Wait for active agents to finish or cancel them.",
+      })
+    }
+
+    const tenantId = request.session!.session.activeOrganizationId!
+    let token: string
+    try {
+      token = await getGithubTokenForTenant(tenantId)
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error ? error.message : "GitHub token not configured",
+      })
+    }
+
+    try {
+      console.log(`[sync] ensureRepoReady for repoPath=${project.repoPath}`)
+      await ensureRepoReady({
+        repoPath: project.repoPath,
+        repoUrl: project.repoUrl,
+        defaultBranch: project.defaultBranch,
+        token,
+      })
+    } catch (error) {
+      console.log(`[sync] ensureRepoReady failed:`, error instanceof Error ? error.message : error)
+      // If the old path is a legacy manual path that's not a valid git repo,
+      // migrate to the new auto-managed location
+      const isLegacyError = error instanceof Error && error.message.includes("legacy project path")
+      if (!isLegacyError) {
+        return reply.status(500).send({
+          error: error instanceof Error ? error.message : "Failed to sync repository",
+        })
+      }
+
+      // Migrate: clone to new auto-managed path and update DB
+      const newRepoPath = getRepoLocalPath(tenantId, project.repoUrl)
+      try {
+        await ensureRepoReady({
+          repoPath: newRepoPath,
+          repoUrl: project.repoUrl,
+          defaultBranch: project.defaultBranch,
+          token,
+        })
+        await request.prisma.project.update({
+          where: { id },
+          data: { repoPath: newRepoPath },
+        })
+      } catch (migrationError) {
+        return reply.status(500).send({
+          error: migrationError instanceof Error ? migrationError.message : "Failed to migrate repository",
+        })
+      }
+    }
+
+    return { success: true }
+  })
+
+  // GET /:id/branches - List remote branches for a project
+  fastify.get("/:id/branches", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    const project = await request.prisma.project.findUnique({ where: { id } })
+    if (!project) {
+      return reply.status(404).send({ error: "Project not found" })
+    }
+
+    const tenantId = request.session!.session.activeOrganizationId!
+    let token: string
+    try {
+      token = await getGithubTokenForTenant(tenantId)
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error ? error.message : "GitHub token not configured",
+      })
+    }
+
+    try {
+      await ensureRepoReady({
+        repoPath: project.repoPath,
+        repoUrl: project.repoUrl,
+        defaultBranch: project.defaultBranch,
+        token,
+      })
+    } catch (error) {
+      return reply.status(500).send({
+        error: error instanceof Error ? error.message : "Failed to sync repository",
+      })
+    }
+
+    try {
+      const git = createGitClient(project.repoPath)
+      const branchSummary = await git.branch(["-r"])
+      const branches = Object.keys(branchSummary.branches)
+        .map((b) => b.replace(/^origin\//, ""))
+        .filter((b) => b !== "HEAD")
+
+      return { branches, defaultBranch: project.defaultBranch }
+    } catch (error) {
+      return reply.status(500).send({
+        error: error instanceof Error ? error.message : "Failed to list branches",
+      })
+    }
   })
 
   // GET /:id - Get a single project

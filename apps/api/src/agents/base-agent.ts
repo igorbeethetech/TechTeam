@@ -1,5 +1,6 @@
 import { query, type SDKResultMessage } from "@anthropic-ai/claude-agent-sdk"
 import { config } from "../lib/config.js"
+import { registerProcess, unregisterProcess } from "../lib/process-registry.js"
 
 export interface AgentExecutionParams {
   prompt: string
@@ -14,6 +15,10 @@ export interface AgentExecutionParams {
   systemPrompt?: string
   /** Optional model override. Defaults to config.CLAUDE_MODEL. */
   model?: string
+  /** Demand ID for process registry (cancel support). */
+  demandId?: string
+  /** AgentRun ID for process registry. */
+  agentRunId?: string
 }
 
 export interface AgentExecutionResult {
@@ -42,6 +47,16 @@ export async function executeAgent(
   }
 
   const abortController = new AbortController()
+
+  // Register process for cancellation support
+  if (params.demandId) {
+    registerProcess({
+      demandId: params.demandId,
+      agentRunId: params.agentRunId ?? "",
+      type: "sdk",
+      abortController,
+    })
+  }
 
   const hasTools =
     params.allowedTools !== undefined && params.allowedTools.length > 0
@@ -101,5 +116,9 @@ export async function executeAgent(
     }
   })()
 
-  return Promise.race([agentPromise, timeoutPromise])
+  try {
+    return await Promise.race([agentPromise, timeoutPromise])
+  } finally {
+    if (params.demandId) unregisterProcess(params.demandId)
+  }
 }

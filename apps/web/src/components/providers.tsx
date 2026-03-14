@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, type ReactNode } from "react"
 import { WebSocketProvider } from "@/hooks/use-websocket"
+import { LanguageProvider } from "@/i18n"
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -19,7 +20,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>{children}</WebSocketProvider>
+      <LanguageProvider>
+        <WebSocketProvider>{children}</WebSocketProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   )
 }

@@ -1,6 +1,7 @@
 import path from "node:path"
 import fs from "node:fs"
 import simpleGit, { GitResponseError, type SimpleGit } from "simple-git"
+import { config } from "./config.js"
 
 export function createGitClient(repoPath: string): SimpleGit {
   return simpleGit(repoPath, {
@@ -227,4 +228,87 @@ export async function cloneRepo(params: {
   // Clone into new directory (no baseDir needed)
   const git = simpleGit()
   await git.clone(authenticatedUrl, localPath)
+}
+
+/**
+ * Compute a deterministic local path for a repo: REPOS_BASE_PATH / tenantId / owner--repo
+ */
+export function getRepoLocalPath(tenantId: string, repoUrl: string): string {
+  const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/)
+  if (!match) {
+    throw new Error(`Cannot parse GitHub owner/repo from URL: ${repoUrl}`)
+  }
+  const [, owner, repo] = match
+  return path.join(config.REPOS_BASE_PATH, tenantId, `${owner}--${repo}`)
+}
+
+/**
+ * Ensure a repo is cloned and up-to-date at the given path.
+ * - If dir doesn't exist → clone + strip token from remote
+ * - If dir exists + is git → fetch + pull on defaultBranch
+ * - If dir exists + not git → throw
+ */
+export async function ensureRepoReady(params: {
+  repoPath: string
+  repoUrl: string
+  defaultBranch: string
+  token: string
+}): Promise<void> {
+  const { repoPath, repoUrl, defaultBranch, token } = params
+
+  if (!fs.existsSync(repoPath)) {
+    // Clone fresh
+    fs.mkdirSync(repoPath, { recursive: true })
+    // Remove newly created empty dir so cloneRepo can create it
+    fs.rmSync(repoPath, { recursive: true })
+    await cloneRepo({ cloneUrl: repoUrl, localPath: repoPath, token })
+    // Strip token from remote config
+    const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/)
+    if (match) {
+      const [, owner, repo] = match
+      const git = createGitClient(repoPath)
+      await git.remote(["set-url", "origin", `https://github.com/${owner}/${repo}.git`])
+    }
+    return
+  }
+
+  // Dir exists — check if it's a valid git repo
+  const isValid = await validateGitRepo(repoPath)
+  if (!isValid) {
+    // Only auto-remove directories inside REPOS_BASE_PATH (auto-managed).
+    // Legacy manual paths (e.g. user project folders) must NOT be deleted.
+    const normalizedRepo = path.resolve(repoPath)
+    const normalizedBase = path.resolve(config.REPOS_BASE_PATH)
+    if (normalizedRepo.startsWith(normalizedBase)) {
+      console.log(`[git] Auto-managed path is not a valid git repo, re-cloning: ${repoPath}`)
+      fs.rmSync(repoPath, { recursive: true, force: true })
+      await cloneRepo({ cloneUrl: repoUrl, localPath: repoPath, token })
+      const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/)
+      if (match) {
+        const [, owner, repo] = match
+        const git = createGitClient(repoPath)
+        await git.remote(["set-url", "origin", `https://github.com/${owner}/${repo}.git`])
+      }
+      return
+    }
+    // Legacy manual path — cannot safely modify it
+    throw new Error(
+      `Path exists but is not a valid git repository: ${repoPath}. ` +
+      `This is a legacy project path. Use the Sync button to migrate it to auto-managed storage.`
+    )
+  }
+
+  // Fetch and pull on default branch
+  const originalUrl = await injectGitToken(repoPath, token)
+  try {
+    const git = createGitClient(repoPath)
+    await git.fetch("origin")
+    // Only pull if we're on the default branch
+    const currentBranch = (await git.revparse(["--abbrev-ref", "HEAD"])).trim()
+    if (currentBranch === defaultBranch) {
+      await git.pull("origin", defaultBranch)
+    }
+  } finally {
+    await restoreGitRemote(repoPath, originalUrl)
+  }
 }

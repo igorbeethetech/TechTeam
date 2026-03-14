@@ -1,6 +1,7 @@
 export type WsEventType =
   | "demand:updated"
   | "demand:stage-changed"
+  | "demand:cancelled"
   | "agent:status-changed"
   | "agent-run:updated"
   | "notification:created"

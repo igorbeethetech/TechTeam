@@ -6,6 +6,8 @@ import { forTenant } from "@techteam/database"
 import type { AgentJobData, AgentJobResult } from "./agent.queue.js"
 import { publishWsEvent } from "../lib/ws-events.js"
 import type { WsEvent } from "@techteam/shared"
+import { getTenantLanguage } from "../lib/i18n.js"
+import { getNotificationText } from "../lib/notification-templates.js"
 
 // Fire-and-forget wrapper: ensures publishWsEvent failures never block or crash the worker.
 // publishWsEvent already has try/catch internally, but this provides double safety.
@@ -94,17 +96,42 @@ export function createAgentWorker() {
       const prisma = forTenant(tenantId)
 
       // Create AgentRun record with status 'running'
+      const jobId = job.id ?? undefined
       const agentRun = await prisma.agentRun.create({
         data: {
           demandId,
           phase,
           status: "running",
           attempt,
+          jobId: jobId ?? null,
         } as any,
       })
+
+      // Set demand agentStatus to running
+      await prisma.demand.update({
+        where: { id: demandId },
+        data: { agentStatus: "running" },
+      })
+      await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
       await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
       try {
+        // Ensure repo is cloned and up-to-date before any phase
+        if (phase === "discovery" || phase === "planning") {
+          const project = await prisma.project.findUniqueOrThrow({ where: { id: projectId } })
+          const demand = await prisma.demand.findUniqueOrThrow({ where: { id: demandId } })
+          const effectiveBranch = (demand.baseBranch as string) ?? project.defaultBranch
+          const { ensureRepoReady } = await import("../lib/git.js")
+          const { getGithubTokenForTenant } = await import("../lib/github.js")
+          const githubToken = await getGithubTokenForTenant(tenantId)
+          await ensureRepoReady({
+            repoPath: project.repoPath,
+            repoUrl: project.repoUrl,
+            defaultBranch: effectiveBranch,
+            token: githubToken,
+          })
+        }
+
         // Dynamically import the correct agent function based on phase
         // Lazy import avoids circular dependencies
         let agentResult: {
@@ -259,21 +286,26 @@ export function createAgentWorker() {
         const errorMessage =
           error instanceof Error ? error.message : String(error)
         const isTimeout = errorMessage.includes("timed out")
+        const isCancelled = errorMessage.includes("cancelled") || errorMessage.includes("aborted") || errorMessage.includes("SIGTERM")
 
-        // Update AgentRun to failed/timeout
+        // Determine status: cancelled > timeout > failed
+        const runStatus = isCancelled ? "cancelled" : isTimeout ? "timeout" : "failed"
+        const demandStatus = isCancelled ? "cancelled" : "failed"
+
+        // Update AgentRun to failed/timeout/cancelled
         await prisma.agentRun.update({
           where: { id: agentRun.id },
           data: {
-            status: isTimeout ? "timeout" : "failed",
+            status: runStatus,
             error: errorMessage,
           },
         })
         await emitEvent({ type: "agent-run:updated", tenantId, payload: { demandId } })
 
-        // Set demand agentStatus to failed
+        // Set demand agentStatus
         await prisma.demand.update({
           where: { id: demandId },
-          data: { agentStatus: "failed" },
+          data: { agentStatus: demandStatus },
         })
         await emitEvent({ type: "agent:status-changed", tenantId, payload: { demandId, projectId } })
 
@@ -284,11 +316,13 @@ export function createAgentWorker() {
             select: { title: true, projectId: true },
           })
           if (failedDemand) {
+            const lang = await getTenantLanguage(tenantId)
+            const notif = getNotificationText("agent_failed", lang, { title: failedDemand.title, phase, error: errorMessage.slice(0, 200) })
             await (prisma as any).notification.create({
               data: {
                 type: "agent_failed",
-                title: `Agent failed: ${phase}`,
-                message: `Agent failed for "${failedDemand.title}" during ${phase} phase. Error: ${errorMessage.slice(0, 200)}`,
+                title: notif.title,
+                message: notif.message,
                 demandId,
                 projectId: failedDemand.projectId,
               },
@@ -396,7 +430,7 @@ async function handleDevelopmentPhase(ctx: {
       createIsolatedBranch,
       commitAndPush,
       resetWorkingDir,
-      validateGitRepo,
+      ensureRepoReady,
       createGitClient,
       getWorktreePath,
       createWorktree,
@@ -408,13 +442,16 @@ async function handleDevelopmentPhase(ctx: {
     // Fetch tenant's GitHub token for push and PR operations
     const githubToken = await getGithubTokenForTenant(tenantId)
 
-    // 1. Validate repoPath exists and is a git repo
-    const isValid = await validateGitRepo(project.repoPath)
-    if (!isValid) {
-      throw new Error(
-        "Project repoPath does not exist or is not a git repository"
-      )
-    }
+    // Compute effective base branch (demand override or project default)
+    const effectiveBranch = (demand.baseBranch as string) ?? project.defaultBranch
+
+    // 1. Ensure repo is cloned and up-to-date
+    await ensureRepoReady({
+      repoPath: project.repoPath,
+      repoUrl: project.repoUrl,
+      defaultBranch: effectiveBranch,
+      token: githubToken,
+    })
 
     // 2. Branch and worktree management
     let branchName = demand.branchName as string | null
@@ -428,7 +465,7 @@ async function handleDevelopmentPhase(ctx: {
         // First run: create worktree with new branch
         const slug = demand.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50)
         branchName = `demand/${demand.id}-${slug}`
-        await createWorktree(project.repoPath, worktreePath, branchName, project.defaultBranch)
+        await createWorktree(project.repoPath, worktreePath, branchName, effectiveBranch)
         await prisma.demand.update({
           where: { id: demandId },
           data: { branchName },
@@ -447,7 +484,7 @@ async function handleDevelopmentPhase(ctx: {
           .replace(/[^a-z0-9]+/g, "-")
           .slice(0, 50)
         branchName = `demand/${demand.id}-${slug}`
-        await createIsolatedBranch(project.repoPath, branchName, project.defaultBranch)
+        await createIsolatedBranch(project.repoPath, branchName, effectiveBranch)
         await prisma.demand.update({
           where: { id: demandId },
           data: { branchName },
@@ -513,7 +550,7 @@ async function handleDevelopmentPhase(ctx: {
             title: `[Demand ${demand.id}] ${demand.title}`,
             body: buildPrBody(demand, agentResult.output),
             head: branchName,
-            base: project.defaultBranch,
+            base: effectiveBranch,
             token: githubToken,
           })
           await prisma.demand.update({
@@ -573,7 +610,8 @@ async function handleTestingPhase(ctx: {
 
   // Dynamic imports
   const { runTestingAgent } = await import("../agents/testing.agent.js")
-  const { createGitClient } = await import("../lib/git.js")
+  const { createGitClient, ensureRepoReady } = await import("../lib/git.js")
+  const { getGithubTokenForTenant } = await import("../lib/github.js")
 
   // 1. Fetch demand and project
   const demand = await prisma.demand.findUniqueOrThrow({
@@ -583,7 +621,16 @@ async function handleTestingPhase(ctx: {
     where: { id: projectId },
   })
 
-  // 2. Checkout demand branch
+  // 2. Ensure repo is up-to-date, then checkout demand branch
+  const effectiveBranch = (demand.baseBranch as string) ?? project.defaultBranch
+  const githubToken = await getGithubTokenForTenant(tenantId)
+  await ensureRepoReady({
+    repoPath: project.repoPath,
+    repoUrl: project.repoUrl,
+    defaultBranch: effectiveBranch,
+    token: githubToken,
+  })
+
   const branchName = demand.branchName as string
   if (!branchName) {
     throw new Error(
@@ -639,11 +686,13 @@ async function handleTestingPhase(ctx: {
 
     // Notify team that demand is ready for human review
     try {
+      const lang = await getTenantLanguage(tenantId)
+      const notif = getNotificationText("demand_ready_for_review", lang, { title: demand.title })
       await (prisma as any).notification.create({
         data: {
           type: "demand_ready_for_review",
-          title: "Ready for review",
-          message: `"${demand.title}" passed automated testing and is ready for human review.`,
+          title: notif.title,
+          message: notif.message,
           demandId,
           projectId,
         },

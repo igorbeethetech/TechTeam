@@ -31,4 +31,5 @@ export const config = {
   CLAUDE_MODEL: claudeModel,
   CLAUDE_DEV_MODEL: optionalEnv("CLAUDE_DEV_MODEL", claudeModel),
   GITHUB_TOKEN: optionalEnv("GITHUB_TOKEN", ""),
+  REPOS_BASE_PATH: optionalEnv("REPOS_BASE_PATH", path.resolve(__dirname, "../../../../.repos")),
 } as const

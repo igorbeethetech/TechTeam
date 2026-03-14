@@ -76,7 +76,21 @@
       "Bash(npx tsc:*)",
       "Bash(docker ps:*)",
       "Bash(claude auth:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(wmic process:*)",
+      "Bash(DATABASE_URL=\"postgresql://techteam:techteam_dev@localhost:5433/techteam\" npx prisma:*)",
+      "Bash(find:*)",
+      "Bash(test:*)",
+      "WebFetch(domain:www.google.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:luciopaiva.com)",
+      "WebFetch(domain:docs.pmnd.rs)",
+      "WebFetch(domain:readyplayer.me)",
+      "WebFetch(domain:www.mixamo.com)",
+      "WebFetch(domain:www.kenney.nl)"
     ]
   }
 }

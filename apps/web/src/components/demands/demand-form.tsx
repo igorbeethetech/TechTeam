@@ -5,6 +5,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { z } from "zod"
+import { GitBranch, Loader2 } from "lucide-react"
 import {
   demandCreateSchema,
   PRIORITY_LEVELS,
@@ -62,6 +63,18 @@ export function DemandForm({ projectId, onSuccess }: DemandFormProps) {
 
   const selectedPriority = watch("priority")
   const selectedProjectId = watch("projectId")
+  const selectedBaseBranch = watch("baseBranch")
+
+  // Fetch branches when a project is selected
+  const effectiveProjectId = projectId ?? selectedProjectId
+  const { data: branchesData, isLoading: isLoadingBranches } = useQuery({
+    queryKey: ["branches", effectiveProjectId],
+    queryFn: () =>
+      api.get<{ branches: string[]; defaultBranch: string }>(
+        `/api/projects/${effectiveProjectId}/branches`
+      ),
+    enabled: !!effectiveProjectId,
+  })
 
   async function onSubmit(data: DemandFormValues) {
     try {
@@ -137,6 +150,45 @@ export function DemandForm({ projectId, onSuccess }: DemandFormProps) {
           <p className="text-sm text-destructive">{errors.priority.message}</p>
         )}
       </div>
+
+      {effectiveProjectId && (
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <GitBranch className="size-3.5" />
+            Branch Base
+            <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+          </Label>
+          {isLoadingBranches ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="size-3.5 animate-spin" />
+              Carregando branches...
+            </div>
+          ) : branchesData?.branches && branchesData.branches.length > 0 ? (
+            <Select
+              value={selectedBaseBranch ?? ""}
+              onValueChange={(value) =>
+                setValue("baseBranch", value === branchesData.defaultBranch ? undefined : value, {
+                  shouldValidate: true,
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={branchesData.defaultBranch} />
+              </SelectTrigger>
+              <SelectContent>
+                {branchesData.branches.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {branch}
+                    {branch === branchesData.defaultBranch && (
+                      <span className="ml-1 text-xs text-muted-foreground">(default)</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
+      )}
 
       {!projectId && (
         <div className="space-y-2">

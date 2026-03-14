@@ -4,6 +4,7 @@ import { developmentOutputSchema, type DevelopmentOutput } from "@techteam/share
 import { prisma } from "@techteam/database"
 import { config } from "../lib/config.js"
 import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
+import { getLanguageInstruction, getTenantLanguage } from "../lib/i18n.js"
 
 /**
  * Builds the system + user prompt for the Development agent.
@@ -166,6 +167,10 @@ export async function runDevelopmentAgent(
   })
   const skillsSection = buildSkillsPromptSection(skills)
 
+  // Fetch tenant language for i18n
+  const language = await getTenantLanguage(tenantId)
+  const languageInstruction = getLanguageInstruction(language)
+
   // Build contextual prompt with plan, requirements, and optional rejection feedback
   const prompt = buildDevelopmentPrompt(
     demand,
@@ -179,8 +184,15 @@ export async function runDevelopmentAgent(
   // Convert Zod schema to JSON Schema for structured output
   const jsonSchema = zodToJsonSchema(developmentOutputSchema)
 
+  // Build system prompt with language instruction
+  const baseSystemPrompt = "You are a senior software developer implementing code changes in a repository. Do NOT run any git commands."
+  const systemPrompt = languageInstruction
+    ? `${baseSystemPrompt}\n\n${languageInstruction}`
+    : baseSystemPrompt
+
   // Call the AI agent with file system tools and higher turn limit
   const result = await executeAgentAuto(tenantId, {
+    demandId,
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,
@@ -188,8 +200,7 @@ export async function runDevelopmentAgent(
     allowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
     maxTurns: 50,
     model: config.CLAUDE_DEV_MODEL,
-    systemPrompt:
-      "You are a senior software developer implementing code changes in a repository. Do NOT run any git commands.",
+    systemPrompt,
   })
 
   // Try to parse structured output. For complex code generation, the agent

@@ -1,14 +1,21 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { demandCreateSchema, demandStageUpdateSchema } from "@techteam/shared"
-import { agentQueue } from "../queues/agent.queue.js"
+import { agentQueue, makeAgentJobId } from "../queues/agent.queue.js"
 import { publishWsEvent } from "../lib/ws-events.js"
 import { validatePreflight } from "../lib/preflight.js"
+import { requestCancelViaRedis } from "../lib/process-registry.js"
+import { cleanupDemandResources } from "../lib/cleanup.js"
+import { createQueueConnection } from "../lib/redis.js"
+import { getTenantLanguage } from "../lib/i18n.js"
+import { getNotificationText } from "../lib/notification-templates.js"
 
 export default async function demandRoutes(fastify: FastifyInstance) {
   // GET / - List demands, optionally filtered by projectId
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
-    const { projectId } = request.query as { projectId?: string }
-    const where = projectId ? { projectId } : {}
+    const { projectId, includeCancelled } = request.query as { projectId?: string; includeCancelled?: string }
+    const where: Record<string, unknown> = {}
+    if (projectId) where.projectId = projectId
+    if (includeCancelled !== "true") where.cancelledAt = null
     const demands = await request.prisma.demand.findMany({
       where,
       orderBy: { createdAt: "asc" },
@@ -67,6 +74,9 @@ export default async function demandRoutes(fastify: FastifyInstance) {
     if (!demand) {
       return reply.status(404).send({ error: "Demand not found" })
     }
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Cannot start a cancelled demand" })
+    }
     if (demand.stage !== "inbox") {
       return reply.status(400).send({ error: "Demand already started" })
     }
@@ -113,6 +123,9 @@ export default async function demandRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: "Demand not found" })
     }
 
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Cannot review a cancelled demand" })
+    }
     if (demand.stage !== "review") {
       return reply.status(400).send({ error: "Demand is not in review stage" })
     }
@@ -134,11 +147,13 @@ export default async function demandRoutes(fastify: FastifyInstance) {
       } catch {}
 
       try {
+        const lang = await getTenantLanguage(tenantId)
+        const notif = getNotificationText("demand_done", lang, { title: demand.title })
         await (request.prisma as any).notification.create({
           data: {
             type: "demand_done",
-            title: "Demand completed",
-            message: `"${demand.title}" has been approved and marked as done.`,
+            title: notif.title,
+            message: notif.message,
             demandId: id,
             projectId: demand.projectId,
           },
@@ -178,11 +193,13 @@ export default async function demandRoutes(fastify: FastifyInstance) {
       })
 
       try {
+        const lang = await getTenantLanguage(tenantId)
+        const notif = getNotificationText("demand_rejected", lang, { title: demand.title, feedback: feedback.slice(0, 200) })
         await (request.prisma as any).notification.create({
           data: {
             type: "demand_rejected",
-            title: "Demand rejected",
-            message: `"${demand.title}" was rejected during review: ${feedback.slice(0, 200)}`,
+            title: notif.title,
+            message: notif.message,
             demandId: id,
             projectId: demand.projectId,
           },
@@ -207,6 +224,9 @@ export default async function demandRoutes(fastify: FastifyInstance) {
     const demand = await request.prisma.demand.findUnique({ where: { id } })
     if (!demand) {
       return reply.status(404).send({ error: "Demand not found" })
+    }
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Cannot clarify a cancelled demand" })
     }
     if (demand.agentStatus !== "paused") {
       return reply.status(400).send({ error: "Demand is not paused" })
@@ -248,6 +268,12 @@ export default async function demandRoutes(fastify: FastifyInstance) {
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       })
+    }
+
+    // Guard: cannot change stage of cancelled demand
+    const demandForStage = await request.prisma.demand.findUnique({ where: { id } })
+    if (demandForStage?.cancelledAt) {
+      return reply.status(400).send({ error: "Cannot update stage of a cancelled demand" })
     }
 
     // Pre-flight check when moving to agent-driven stages
@@ -310,5 +336,256 @@ export default async function demandRoutes(fastify: FastifyInstance) {
       }
       throw error
     }
+  })
+
+  // POST /:id/cancel-agent - Cancel a running or queued agent
+  fastify.post("/:id/cancel-agent", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    const tenantId = request.session!.session.activeOrganizationId!
+
+    const demand = await request.prisma.demand.findUnique({ where: { id } })
+    if (!demand) {
+      return reply.status(404).send({ error: "Demand not found" })
+    }
+
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Demand is already cancelled" })
+    }
+    if (!demand.agentStatus || !["queued", "running"].includes(demand.agentStatus)) {
+      return reply.status(400).send({ error: "No active agent to cancel" })
+    }
+
+    // Find last running/queued AgentRun
+    const lastRun = await request.prisma.agentRun.findFirst({
+      where: {
+        demandId: id,
+        status: { in: ["running", "queued"] },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    if (demand.agentStatus === "running") {
+      // Signal worker to cancel the process via Redis pub/sub
+      const redis = createQueueConnection()
+      try {
+        await requestCancelViaRedis(redis, id)
+        // Wait up to 5s for process to die
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+      } finally {
+        await redis.quit()
+      }
+    }
+
+    // If queued with a jobId, try to remove the job from the queue
+    if (demand.agentStatus === "queued" && lastRun?.jobId) {
+      try {
+        const job = await agentQueue.getJob(lastRun.jobId)
+        if (job) {
+          await job.remove()
+        }
+      } catch (err) {
+        console.warn(`[cancel-agent] Failed to remove queued job:`, err)
+      }
+    }
+
+    // Update AgentRun if it's still in a non-terminal state
+    if (lastRun) {
+      try {
+        await request.prisma.agentRun.update({
+          where: { id: lastRun.id },
+          data: { status: "cancelled", error: "Cancelled by user" },
+        })
+      } catch {
+        // May have already been updated by the worker
+      }
+    }
+
+    // Update demand status
+    await request.prisma.demand.update({
+      where: { id },
+      data: { agentStatus: "cancelled" },
+    })
+
+    // Release dev slot if in development
+    if (demand.stage === "development") {
+      const { releaseDevSlot } = await import("../lib/concurrency.js")
+      const redis = createQueueConnection()
+      try {
+        await releaseDevSlot(redis, demand.projectId, id)
+      } finally {
+        await redis.quit()
+      }
+    }
+
+    try {
+      await publishWsEvent({ type: "agent:status-changed", tenantId, payload: { demandId: id, projectId: demand.projectId } })
+      await publishWsEvent({ type: "agent-run:updated", tenantId, payload: { demandId: id } })
+    } catch {}
+
+    return { success: true, message: "Agent cancelled" }
+  })
+
+  // POST /:id/retry - Retry a failed/timeout/cancelled phase
+  fastify.post("/:id/retry", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    const tenantId = request.session!.session.activeOrganizationId!
+
+    const demand = await request.prisma.demand.findUnique({ where: { id } })
+    if (!demand) {
+      return reply.status(404).send({ error: "Demand not found" })
+    }
+
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Cannot retry a cancelled demand" })
+    }
+    if (!demand.agentStatus || !["failed", "timeout", "cancelled"].includes(demand.agentStatus)) {
+      return reply.status(400).send({ error: "Demand is not in a retriable state" })
+    }
+
+    // Map current stage to agent phase
+    const stageToPhase: Record<string, string> = {
+      discovery: "discovery",
+      planning: "planning",
+      development: "development",
+      testing: "testing",
+    }
+    const phase = stageToPhase[demand.stage]
+    if (!phase) {
+      return reply.status(400).send({ error: `Cannot retry from stage: ${demand.stage}` })
+    }
+
+    // Pre-flight validation
+    const preflight = await validatePreflight(tenantId)
+    if (!preflight.ok) {
+      return reply.status(400).send({
+        error: preflight.errors[0]?.message ?? "Configuração incompleta",
+        details: preflight.errors,
+      })
+    }
+
+    // Set agentStatus to queued and enqueue job
+    await request.prisma.demand.update({
+      where: { id },
+      data: { agentStatus: "queued" },
+    })
+
+    const jobId = makeAgentJobId(id, phase)
+    await agentQueue.add("run-agent", {
+      demandId: id,
+      tenantId,
+      projectId: demand.projectId,
+      phase: phase as "discovery" | "planning" | "development" | "testing",
+    }, { jobId })
+
+    try {
+      await publishWsEvent({ type: "agent:status-changed", tenantId, payload: { demandId: id, projectId: demand.projectId } })
+    } catch {}
+
+    return { success: true, message: `Retrying ${phase} phase` }
+  })
+
+  // POST /:id/cancel - Cancel demand entirely (close PR, clean up, return to inbox)
+  fastify.post("/:id/cancel", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const { id } = request.params
+    const { closePr = true, deleteBranch = false } = (request.body ?? {}) as {
+      closePr?: boolean
+      deleteBranch?: boolean
+    }
+    const tenantId = request.session!.session.activeOrganizationId!
+
+    const demand = await request.prisma.demand.findUnique({
+      where: { id },
+      include: {
+        project: {
+          select: { id: true, repoUrl: true, maxConcurrentDev: true },
+        },
+      },
+    })
+    if (!demand) {
+      return reply.status(404).send({ error: "Demand not found" })
+    }
+
+    if (demand.cancelledAt) {
+      return reply.status(400).send({ error: "Demand is already cancelled" })
+    }
+    if (demand.stage === "inbox") {
+      return reply.status(400).send({ error: "Demand is still in inbox" })
+    }
+
+    // 1. If agent is active, cancel it first
+    if (demand.agentStatus && ["queued", "running"].includes(demand.agentStatus)) {
+      // Find last active AgentRun
+      const lastRun = await request.prisma.agentRun.findFirst({
+        where: { demandId: id, status: { in: ["running", "queued"] } },
+        orderBy: { createdAt: "desc" },
+      })
+
+      if (demand.agentStatus === "running") {
+        const redis = createQueueConnection()
+        try {
+          await requestCancelViaRedis(redis, id)
+          await new Promise((resolve) => setTimeout(resolve, 3000))
+        } finally {
+          await redis.quit()
+        }
+      }
+
+      if (lastRun?.jobId && demand.agentStatus === "queued") {
+        try {
+          const job = await agentQueue.getJob(lastRun.jobId)
+          if (job) await job.remove()
+        } catch {}
+      }
+
+      if (lastRun) {
+        try {
+          await request.prisma.agentRun.update({
+            where: { id: lastRun.id },
+            data: { status: "cancelled", error: "Demand cancelled by user" },
+          })
+        } catch {}
+      }
+    }
+
+    // 2. Cleanup resources (PR, branch, dev slot)
+    await cleanupDemandResources({
+      demand: { ...demand, project: demand.project },
+      tenantId,
+      closePr,
+      deleteBranch,
+    })
+
+    // 3. Soft delete: mark as cancelled, preserve all data
+    await request.prisma.demand.update({
+      where: { id },
+      data: {
+        cancelledAt: new Date(),
+        agentStatus: null,
+      },
+    })
+
+    // 4. Create notification
+    try {
+      const lang = await getTenantLanguage(tenantId)
+      const notif = getNotificationText("demand_cancelled", lang, { title: demand.title })
+      await (request.prisma as any).notification.create({
+        data: {
+          type: "demand_cancelled",
+          title: notif.title,
+          message: notif.message,
+          demandId: id,
+          projectId: demand.projectId,
+        },
+      })
+    } catch {}
+
+    // 5. Emit events
+    try {
+      await publishWsEvent({ type: "demand:cancelled", tenantId, payload: { demandId: id, projectId: demand.projectId } })
+      await publishWsEvent({ type: "demand:stage-changed", tenantId, payload: { demandId: id, projectId: demand.projectId } })
+      await publishWsEvent({ type: "notification:created", tenantId, payload: { demandId: id } })
+    } catch {}
+
+    return { success: true, message: "Demand cancelled" }
   })
 }

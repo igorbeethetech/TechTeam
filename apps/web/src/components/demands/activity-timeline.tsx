@@ -4,9 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useWsStatus } from "@/hooks/use-websocket"
 import {
-  STAGE_LABELS,
   type AgentRun,
-  type PipelineStage,
   type DemandStage,
 } from "@techteam/shared"
 import {
@@ -20,6 +18,7 @@ import {
   Pause,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { useTranslation } from "@/i18n/language-context"
 import {
   Tooltip,
   TooltipContent,
@@ -33,9 +32,9 @@ interface TimelineEvent {
   type: "created" | "agent_start" | "agent_end" | "stage_change"
   phase?: string
   status?: string
-  label: string
-  detail?: string
   durationMs?: number
+  attempt?: number
+  errorSnippet?: string
 }
 
 function formatDuration(ms: number): string {
@@ -59,8 +58,6 @@ function deriveTimeline(
     id: "created",
     timestamp: new Date(createdAt),
     type: "created",
-    label: "Demand created",
-    detail: "Added to Inbox",
   })
 
   // 2. Build events from agent runs (sorted by createdAt)
@@ -69,38 +66,27 @@ function deriveTimeline(
   )
 
   for (const run of sorted) {
-    const phaseLabel =
-      STAGE_LABELS[run.phase as PipelineStage] ?? run.phase
-
     events.push({
       id: `${run.id}-start`,
       timestamp: new Date(run.createdAt),
       type: "agent_start",
       phase: run.phase,
       status: run.status,
-      label: `${phaseLabel} agent started`,
-      detail: run.attempt > 1 ? `Attempt ${run.attempt}` : undefined,
+      attempt: run.attempt > 1 ? run.attempt : undefined,
     })
 
     if (run.status === "completed" || run.status === "failed" || run.status === "timeout") {
       const endTime = new Date(
         new Date(run.createdAt).getTime() + (run.durationMs || 0)
       )
-      const statusLabel =
-        run.status === "completed"
-          ? "completed"
-          : run.status === "failed"
-            ? "failed"
-            : "timed out"
       events.push({
         id: `${run.id}-end`,
         timestamp: endTime,
         type: "agent_end",
         phase: run.phase,
         status: run.status,
-        label: `${phaseLabel} agent ${statusLabel}`,
         durationMs: run.durationMs,
-        detail: run.error ? run.error.slice(0, 100) : undefined,
+        errorSnippet: run.error ? run.error.slice(0, 100) : undefined,
       })
     }
   }
@@ -151,6 +137,7 @@ export function ActivityTimeline({
   currentStage,
   isAgentActive,
 }: ActivityTimelineProps) {
+  const { t } = useTranslation()
   const wsStatus = useWsStatus()
 
   const { data, isLoading } = useQuery({
@@ -167,7 +154,7 @@ export function ActivityTimeline({
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Loading timeline...
+        {t("activity.loading")}
       </div>
     )
   }
@@ -175,9 +162,42 @@ export function ActivityTimeline({
   const agentRuns = data?.agentRuns ?? []
   const events = deriveTimeline(createdAt, currentStage, agentRuns)
 
+  function getEventLabel(event: TimelineEvent): string {
+    if (event.type === "created") {
+      return t("activity.demandCreated")
+    }
+    const phaseLabel = event.phase
+      ? t(`stages.${event.phase as "discovery" | "planning" | "development" | "testing"}`)
+      : event.phase ?? ""
+    if (event.type === "agent_start") {
+      return `${phaseLabel} ${t("activity.agentStarted")}`
+    }
+    if (event.type === "agent_end") {
+      if (event.status === "completed") return `${phaseLabel} ${t("activity.agentCompleted")}`
+      if (event.status === "failed") return `${phaseLabel} ${t("activity.agentFailed")}`
+      if (event.status === "timeout") return `${phaseLabel} ${t("activity.agentTimedOut")}`
+      if (event.status === "cancelled") return `${phaseLabel} ${t("activity.agentCancelled")}`
+      return `${phaseLabel} ${t("activity.agentCompleted")}`
+    }
+    return ""
+  }
+
+  function getEventDetail(event: TimelineEvent): string | undefined {
+    if (event.type === "created") {
+      return t("activity.addedToInbox")
+    }
+    if (event.type === "agent_start" && event.attempt) {
+      return `${t("agentRuns.attempt")} ${event.attempt}`
+    }
+    if (event.errorSnippet) {
+      return event.errorSnippet
+    }
+    return undefined
+  }
+
   if (events.length === 0) {
     return (
-      <p className="py-4 text-sm text-muted-foreground">No activity yet</p>
+      <p className="py-4 text-sm text-muted-foreground">{t("activity.noActivity")}</p>
     )
   }
 
@@ -196,7 +216,7 @@ export function ActivityTimeline({
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm leading-tight">{event.label}</p>
+              <p className="text-sm leading-tight">{getEventLabel(event)}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -217,9 +237,9 @@ export function ActivityTimeline({
                   </span>
                 )}
               </div>
-              {event.detail && (
+              {getEventDetail(event) && (
                 <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                  {event.detail}
+                  {getEventDetail(event)}
                 </p>
               )}
             </div>

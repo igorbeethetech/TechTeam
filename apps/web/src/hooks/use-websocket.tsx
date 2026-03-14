@@ -19,6 +19,11 @@ type ConnectionStatus = "connecting" | "connected" | "disconnected"
 const EVENT_TO_QUERY_KEYS: Record<string, (payload: any) => string[][]> = {
   "demand:updated": (p) => [["demand", p.demandId], ["demands", p.projectId]],
   "demand:stage-changed": (p) => [["demands", p.projectId]],
+  "demand:cancelled": (p) => [
+    ["demand", p.demandId],
+    ["demands", p.projectId],
+    ["agent-runs", p.demandId],
+  ],
   "agent:status-changed": (p) => [
     ["demand", p.demandId],
     ["demands", p.projectId],

@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "sonner"
 import {
   Loader2, Save, Eye, EyeOff, CheckCircle, Key, Github, Terminal,
-  AlertTriangle, ExternalLink, LogIn,
+  AlertTriangle, ExternalLink, LogIn, Globe,
 } from "lucide-react"
 import { api } from "@/lib/api"
 
@@ -22,6 +22,7 @@ interface SettingsResponse {
     hasGithubToken: boolean
     hasAnthropicApiKey: boolean
     agentExecutionMode: "sdk" | "cli"
+    beeLanguage: "pt-BR" | "en-US"
   }
 }
 
@@ -43,6 +44,7 @@ export default function SettingsPage() {
   const [showGithub, setShowGithub] = useState(false)
   const [showAnthropic, setShowAnthropic] = useState(false)
   const [executionMode, setExecutionMode] = useState<"sdk" | "cli">("sdk")
+  const [beeLanguage, setBeeLanguage] = useState<"pt-BR" | "en-US">("pt-BR")
   const [saved, setSaved] = useState<string | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -64,7 +66,7 @@ export default function SettingsPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (body: { githubToken?: string; anthropicApiKey?: string; agentExecutionMode?: "sdk" | "cli" }) =>
+    mutationFn: (body: { githubToken?: string; anthropicApiKey?: string; agentExecutionMode?: "sdk" | "cli"; beeLanguage?: "pt-BR" | "en-US" }) =>
       api.put<SettingsResponse>("/api/settings", body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] })
@@ -75,6 +77,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (data?.settings?.agentExecutionMode) {
       setExecutionMode(data.settings.agentExecutionMode)
+    }
+    if (data?.settings?.beeLanguage) {
+      setBeeLanguage(data.settings.beeLanguage)
     }
   }, [data])
 
@@ -92,6 +97,13 @@ export default function SettingsPage() {
     }
     setIsLoggingIn(false)
   }, [])
+
+  function saveLanguage(lang: "pt-BR" | "en-US") {
+    setBeeLanguage(lang)
+    mutation.mutate({ beeLanguage: lang })
+    setSaved("language")
+    setTimeout(() => setSaved(null), 3000)
+  }
 
   function saveExecutionMode(mode: "sdk" | "cli") {
     setExecutionMode(mode)
@@ -199,6 +211,51 @@ export default function SettingsPage() {
           ))}
         </div>
       )}
+
+      {/* Language */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="size-5" />
+            Idioma / Language
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Define o idioma da interface e dos agentes de IA (prompts, análises, requisitos, planos e testes).
+          </p>
+          <RadioGroup
+            value={beeLanguage}
+            onValueChange={(value: string) => saveLanguage(value as "pt-BR" | "en-US")}
+            className="space-y-3"
+          >
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <RadioGroupItem value="pt-BR" id="lang-pt" />
+              <Label htmlFor="lang-pt" className="flex-1 cursor-pointer">
+                <div className="font-medium">Português (Brasil)</div>
+                <div className="text-sm text-muted-foreground">
+                  Interface e respostas dos agentes em português brasileiro.
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <RadioGroupItem value="en-US" id="lang-en" />
+              <Label htmlFor="lang-en" className="flex-1 cursor-pointer">
+                <div className="font-medium">English (US)</div>
+                <div className="text-sm text-muted-foreground">
+                  Interface and AI agent responses in English.
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+          {saved === "language" && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle className="size-4" />
+              Idioma salvo
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* GitHub Token */}
       <Card id="github-token">

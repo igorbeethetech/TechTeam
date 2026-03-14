@@ -17,6 +17,7 @@ import { CopyButton } from "@/components/ui/copy-button"
 import { api } from "@/lib/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { useTranslation } from "@/i18n/language-context"
 
 interface ReviewSectionProps {
   demandId: string
@@ -38,6 +39,7 @@ export function ReviewSection({
   previewUrlTemplate,
 }: ReviewSectionProps) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [isApproving, setIsApproving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const [showRejectForm, setShowRejectForm] = useState(false)
@@ -51,11 +53,11 @@ export function ReviewSection({
     setIsApproving(true)
     try {
       await api.post(`/api/demands/${demandId}/review`, { action: "approve" })
-      toast.success("Demand approved and marked as done!")
+      toast.success(t("review.demandApproved"))
       queryClient.invalidateQueries({ queryKey: ["demand", demandId] })
       queryClient.invalidateQueries({ queryKey: ["demands", projectId] })
     } catch (err) {
-      toast.error("Failed to approve demand")
+      toast.error(t("review.failedToApprove"))
     } finally {
       setIsApproving(false)
     }
@@ -72,13 +74,13 @@ export function ReviewSection({
         action: "reject",
         feedback: feedback.trim(),
       })
-      toast.success("Demand rejected, returning to development")
+      toast.success(t("review.demandRejected"))
       setShowRejectForm(false)
       setFeedback("")
       queryClient.invalidateQueries({ queryKey: ["demand", demandId] })
       queryClient.invalidateQueries({ queryKey: ["demands", projectId] })
     } catch (err) {
-      toast.error("Failed to reject demand")
+      toast.error(t("review.failedToReject"))
     } finally {
       setIsRejecting(false)
     }
@@ -89,10 +91,10 @@ export function ReviewSection({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="size-5 text-amber-600" />
-          Human Review Required
+          {t("review.humanReviewRequired")}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Automated testing passed. Please test the branch and approve or reject.
+          {t("review.automatedTestingPassed")}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -103,7 +105,7 @@ export function ReviewSection({
             <div className="flex items-center justify-between rounded-md border bg-white p-3">
               <div className="flex items-center gap-2">
                 <ExternalLink className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Pull Request</span>
+                <span className="text-sm font-medium">{t("review.pullRequest")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <a
@@ -124,7 +126,7 @@ export function ReviewSection({
             <div className="flex items-center justify-between rounded-md border bg-white p-3">
               <div className="flex items-center gap-2">
                 <GitBranch className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Branch</span>
+                <span className="text-sm font-medium">{t("review.branch")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <code className="rounded bg-muted px-2 py-0.5 text-sm font-mono">
@@ -140,7 +142,7 @@ export function ReviewSection({
             <div className="flex items-center justify-between rounded-md border bg-white p-3">
               <div className="flex items-center gap-2">
                 <Globe className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Preview</span>
+                <span className="text-sm font-medium">{t("review.preview")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <a
@@ -149,7 +151,7 @@ export function ReviewSection({
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 underline hover:text-blue-800"
                 >
-                  Open Preview
+                  {t("review.preview")}
                 </a>
                 <CopyButton text={previewUrl} label="preview URL" />
               </div>
@@ -160,7 +162,7 @@ export function ReviewSection({
           {branchName && (
             <div className="flex items-center justify-between rounded-md border bg-white p-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Local Test</span>
+                <span className="text-sm font-medium">{t("review.localTest")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <code className="rounded bg-muted px-2 py-0.5 text-xs font-mono">
@@ -178,7 +180,7 @@ export function ReviewSection({
         {/* Test Instructions */}
         {testInstructions && (
           <div className="rounded-md border bg-white p-3">
-            <p className="mb-2 text-sm font-medium">Testing Instructions</p>
+            <p className="mb-2 text-sm font-medium">{t("review.testingInstructions")}</p>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
               {testInstructions}
             </p>
@@ -193,11 +195,11 @@ export function ReviewSection({
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
             {isApproving ? (
-              "Approving..."
+              t("review.approving")
             ) : (
               <>
                 <CheckCircle2 className="mr-2 size-4" />
-                Approve & Complete
+                {t("review.approveAndComplete")}
               </>
             )}
           </Button>
@@ -208,7 +210,7 @@ export function ReviewSection({
             className="flex-1"
           >
             <XCircle className="mr-2 size-4" />
-            Reject
+            {t("review.reject")}
           </Button>
         </div>
 
@@ -216,12 +218,12 @@ export function ReviewSection({
         {showRejectForm && (
           <div className="space-y-3 rounded-md border border-red-200 bg-red-50/50 p-3">
             <p className="text-sm font-medium text-red-800">
-              What needs to be fixed?
+              {t("review.whatNeedsToBeFixed")}
             </p>
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Describe the issues found during testing..."
+              placeholder={t("review.describeFeedback")}
               rows={3}
               className="bg-white"
             />
@@ -231,7 +233,7 @@ export function ReviewSection({
               variant="destructive"
               size="sm"
             >
-              {isRejecting ? "Rejecting..." : "Submit Rejection & Return to Development"}
+              {isRejecting ? t("review.rejecting") : t("review.submitRejection")}
             </Button>
           </div>
         )}

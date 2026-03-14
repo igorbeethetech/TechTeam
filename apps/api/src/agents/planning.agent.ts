@@ -3,6 +3,7 @@ import { executeAgentAuto } from "./agent-router.js"
 import { planningOutputSchema } from "@techteam/shared"
 import { prisma } from "@techteam/database"
 import { matchSkills, buildSkillsPromptSection } from "../lib/skills.js"
+import { getLanguageInstruction, getTenantLanguage } from "../lib/i18n.js"
 
 /**
  * Builds the system + user prompt for the Planning agent.
@@ -19,20 +20,15 @@ function buildPlanningPrompt(
     defaultBranch: string
   },
   requirements: unknown,
-  skillsSection: string
+  skillsSection: string,
+  languageInstruction: string
 ): string {
-  const systemContext = [
-    "You are a senior software architect.",
-    "Given the requirements from a discovery phase, produce a detailed technical implementation plan.",
-    "Break down the work into discrete tasks with specific file paths and dependencies between tasks.",
-  ].join(" ")
-
   const userPrompt = [
     `## Project`,
     `- **Name:** ${project.name}`,
     `- **Tech Stack:** ${project.techStack}`,
     `- **Repository:** ${project.repoUrl}`,
-    `- **Repo Path:** ${project.repoPath}`,
+    `- **Local Path:** ${project.repoPath}`,
     `- **Default Branch:** ${project.defaultBranch}`,
     ``,
     `## Demand`,
@@ -45,17 +41,24 @@ function buildPlanningPrompt(
     `\`\`\``,
     ``,
     ...(skillsSection ? [skillsSection, ``] : []),
+    ...(languageInstruction ? [languageInstruction, ``] : []),
     `## Instructions`,
+    ``,
+    `You have access to the project's source code at: ${project.repoPath}`,
+    `Use the tools (Glob, Grep, Read) to examine the actual code referenced in the requirements before planning.`,
+    ``,
     `Create a technical implementation plan that:`,
     `1. Decomposes the work into discrete tasks, each with a clear description and type (create/modify/delete/test/config)`,
-    `2. Lists specific files that will be created or modified for each task`,
+    `2. Lists specific files that will be created or modified for each task (verify they exist by reading the codebase)`,
     `3. Defines dependencies between tasks (which task must complete before another can start)`,
     `4. Orders tasks for optimal execution`,
     `5. Identifies risk areas that need extra attention`,
     `6. Provides a brief summary of the overall approach`,
+    ``,
+    `IMPORTANT: Do NOT modify any files. Only read and analyze.`,
   ].join("\n")
 
-  return `${systemContext}\n\n${userPrompt}`
+  return userPrompt
 }
 
 export interface PlanningAgentParams {
@@ -115,22 +118,46 @@ export async function runPlanningAgent(
   })
   const skillsSection = buildSkillsPromptSection(skills)
 
+  // Fetch tenant language for i18n
+  const language = await getTenantLanguage(tenantId)
+  const languageInstruction = getLanguageInstruction(language)
+
   // Build contextual prompt with discovery requirements
-  const prompt = buildPlanningPrompt(demand, project, demand.requirements, skillsSection)
+  const prompt = buildPlanningPrompt(demand, project, demand.requirements, skillsSection, languageInstruction)
 
   // Convert Zod schema to JSON Schema for structured output
-  // Using zod-to-json-schema because z.toJSONSchema() is only in Zod v4 namespace
-  // and our schemas are defined with Zod v3 API in @techteam/shared
   const jsonSchema = zodToJsonSchema(planningOutputSchema)
 
-  // Call the AI agent
+  // Build system prompt
+  const baseSystemPrompt = [
+    "You are a senior software architect with access to the project's source code.",
+    "Examine the codebase to produce accurate implementation plans with real file paths.",
+    "Do NOT modify any files. Only read and analyze.",
+  ].join(" ")
+  const systemPrompt = languageInstruction
+    ? `${baseSystemPrompt}\n\n${languageInstruction}`
+    : baseSystemPrompt
+
+  // Call the AI agent with read-only tools so it can verify file paths and code structure
   const result = await executeAgentAuto(tenantId, {
+    demandId,
     prompt,
     schema: jsonSchema as Record<string, unknown>,
     timeoutMs: timeout,
+    cwd: project.repoPath,
+    allowedTools: ["Read", "Glob", "Grep"],
+    maxTurns: 15,
+    systemPrompt,
   })
 
   // Parse and validate the structured output
+  if (result.output === undefined || result.output === null) {
+    throw new Error(
+      `Planning agent returned empty output (${typeof result.output}). ` +
+        `This usually means the CLI did not produce structured JSON. ` +
+        `CostUsd=${result.costUsd}, DurationMs=${result.durationMs}`
+    )
+  }
   const output = planningOutputSchema.parse(result.output)
 
   return {

@@ -244,6 +244,34 @@ export async function createGithubRepo(
 }
 
 /**
+ * Delete a remote branch on GitHub.
+ * Tolerates 422 (branch already deleted) and 404 (not found).
+ */
+export async function deleteRemoteBranch(params: {
+  repoUrl: string
+  branchName: string
+  token?: string
+}): Promise<boolean> {
+  const octokit = getOctokit(params.token)
+  const { owner, repo } = extractOwnerRepo(params.repoUrl)
+
+  try {
+    await octokit.rest.git.deleteRef({
+      owner,
+      repo,
+      ref: `heads/${params.branchName}`,
+    })
+    return true
+  } catch (error: unknown) {
+    const status = (error as { status?: number }).status
+    if (status === 404 || status === 422) {
+      return false // Branch already deleted or not found
+    }
+    throw error
+  }
+}
+
+/**
  * Extract the PR number from a GitHub PR URL.
  * e.g. "https://github.com/owner/repo/pull/42" -> 42
  */

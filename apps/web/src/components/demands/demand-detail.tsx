@@ -3,9 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Calendar, Play, User, Loader2 } from "lucide-react"
+import { ArrowLeft, Calendar, GitBranch, Play, User, Loader2, Ban } from "lucide-react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
+import { useTranslation } from "@/i18n/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -20,12 +21,11 @@ import { MergeStatusView } from "./merge-status-view"
 import { ReviewSection } from "./review-section"
 import { AgentRunList } from "./agent-run-list"
 import { ActivityTimeline } from "./activity-timeline"
+import { DemandActions } from "./demand-actions"
+import { ErrorRecoverySection } from "./error-recovery-section"
 import {
-  STAGE_LABELS,
   type Demand,
   type DemandPriority,
-  type DemandStage,
-  type PipelineStage,
   type DiscoveryOutput,
   type PlanningOutput,
   type TestingOutput,
@@ -56,15 +56,17 @@ const AGENT_STATUS_STYLES: Record<string, string> = {
   failed: "bg-red-100 text-red-700 hover:bg-red-100",
   completed: "bg-green-100 text-green-700 hover:bg-green-100",
   timeout: "bg-orange-100 text-orange-700 hover:bg-orange-100",
+  cancelled: "bg-gray-100 text-gray-500 hover:bg-gray-100",
 }
 
-const AGENT_STATUS_LABELS: Record<string, string> = {
-  running: "Agent Running",
-  queued: "Agent Queued",
-  paused: "Paused - needs input",
-  failed: "Agent Failed",
-  completed: "Agent Completed",
-  timeout: "Agent Timed Out",
+const AGENT_STATUS_KEYS: Record<string, string> = {
+  running: "agentStatus.running",
+  queued: "agentStatus.queued",
+  paused: "agentStatus.paused",
+  failed: "agentStatus.failed",
+  completed: "agentStatus.completed",
+  timeout: "agentStatus.timeout",
+  cancelled: "agentStatus.cancelled",
 }
 
 interface DemandWithProject extends Demand {
@@ -83,9 +85,15 @@ interface DemandDetailProps {
   isAgentActive?: boolean
 }
 
-function getDisplayStage(stage: DemandStage): string {
-  if (stage === "merge") return STAGE_LABELS["review"] ?? stage
-  return STAGE_LABELS[stage as PipelineStage] ?? stage
+const STAGE_KEYS: Record<string, string> = {
+  inbox: "stages.inbox",
+  discovery: "stages.discovery",
+  planning: "stages.planning",
+  development: "stages.development",
+  testing: "stages.testing",
+  review: "stages.review",
+  done: "stages.done",
+  merge: "stages.merge",
 }
 
 function getDefaultTab(demand: DemandWithProject): string {
@@ -98,6 +106,7 @@ function getDefaultTab(demand: DemandWithProject): string {
 }
 
 export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [isStarting, setIsStarting] = useState(false)
 
@@ -124,12 +133,15 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
         )
       : null
 
+  const isCancelled = !!demand.cancelledAt
+
   const hasRequirements = demand.requirements != null
   const hasPlan = demand.plan != null
   const hasDevelopment = !!(demand.branchName || demand.prUrl)
   const hasTesting = demand.testingFeedback != null
   const hasReview = demand.stage === "review"
   const hasLegacyMerge = !!(demand.mergeStatus || demand.stage === "merge")
+  const hasError = demand.agentStatus === "failed" || demand.agentStatus === "timeout" || demand.agentStatus === "cancelled"
 
   return (
     <div className="space-y-6">
@@ -137,9 +149,29 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
       <Button variant="ghost" size="sm" asChild>
         <Link href={`/projects/${demand.projectId}/board`}>
           <ArrowLeft className="size-4" />
-          Back to Board
+          {t("demand.backToBoard")}
         </Link>
       </Button>
+
+      {/* Cancelled Banner */}
+      {isCancelled && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+          <Ban className="size-5 shrink-0" />
+          <div>
+            <p className="font-semibold">{t("demand.cancelledTitle")}</p>
+            <p className="text-sm text-red-700">
+              {t("demand.cancelledDescription")}{" "}
+              {new Date(demand.cancelledAt!).toLocaleDateString("pt-BR", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Header: Title + Badges */}
       <div className="space-y-3">
@@ -160,7 +192,7 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
                 "bg-gray-100 text-gray-700"
               }
             >
-              {getDisplayStage(demand.stage)}
+              {t((demand.stage === "merge" ? STAGE_KEYS["review"] : STAGE_KEYS[demand.stage] ?? demand.stage) as Parameters<typeof t>[0])}
             </Badge>
             {demand.agentStatus && (
               <Badge
@@ -172,11 +204,12 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
                 {demand.agentStatus === "running" && (
                   <Loader2 className="mr-1 size-3 animate-spin" />
                 )}
-                {AGENT_STATUS_LABELS[demand.agentStatus] ??
-                  demand.agentStatus}
+                {AGENT_STATUS_KEYS[demand.agentStatus]
+                  ? t(AGENT_STATUS_KEYS[demand.agentStatus] as Parameters<typeof t>[0])
+                  : demand.agentStatus}
               </Badge>
             )}
-            {demand.stage === "inbox" && (
+            {demand.stage === "inbox" && !isCancelled && (
               <Button
                 size="sm"
                 onClick={handleStart}
@@ -187,11 +220,22 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
                 ) : (
                   <Play className="mr-1 size-4" />
                 )}
-                Iniciar
+                {t("demand.start")}
               </Button>
             )}
           </div>
         </div>
+
+        {/* Demand Actions (cancel agent, retry, cancel demand) */}
+        {!isCancelled && (
+          <DemandActions
+            demandId={demand.id}
+            projectId={demand.projectId}
+            stage={demand.stage}
+            agentStatus={demand.agentStatus}
+            prUrl={demand.prUrl}
+          />
+        )}
 
         {/* Metadata line */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -214,6 +258,12 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
               {demand.complexity}
             </Badge>
           )}
+          {demand.baseBranch && demand.baseBranch !== demand.project?.defaultBranch && (
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <GitBranch className="size-3" />
+              Base: {demand.baseBranch}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -234,6 +284,16 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
         totalTokens={demand.totalTokens}
       />
 
+      {/* Error Recovery Section (prominent, outside tabs when agent failed) */}
+      {hasError && (
+        <ErrorRecoverySection
+          demandId={demand.id}
+          projectId={demand.projectId}
+          agentStatus={demand.agentStatus!}
+          stage={demand.stage}
+        />
+      )}
+
       {/* Review Section (prominent, outside tabs when active) */}
       {hasReview && (
         <ReviewSection
@@ -250,17 +310,17 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
       {/* Tabbed Content */}
       <Tabs defaultValue={getDefaultTab(demand)}>
         <TabsList className="w-full flex-wrap">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="overview">{t("demand.overview")}</TabsTrigger>
           {hasRequirements && (
-            <TabsTrigger value="requirements">Requirements</TabsTrigger>
+            <TabsTrigger value="requirements">{t("demand.requirements")}</TabsTrigger>
           )}
-          {hasPlan && <TabsTrigger value="plan">Plan</TabsTrigger>}
+          {hasPlan && <TabsTrigger value="plan">{t("demand.plan")}</TabsTrigger>}
           {hasDevelopment && (
-            <TabsTrigger value="development">Development</TabsTrigger>
+            <TabsTrigger value="development">{t("demand.development")}</TabsTrigger>
           )}
-          {hasTesting && <TabsTrigger value="tests">Tests</TabsTrigger>}
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="logs">Agent Logs</TabsTrigger>
+          {hasTesting && <TabsTrigger value="tests">{t("demand.tests")}</TabsTrigger>}
+          <TabsTrigger value="activity">{t("demand.activity")}</TabsTrigger>
+          <TabsTrigger value="logs">{t("demand.agentLogs")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -268,7 +328,7 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
           {demand.description && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Description
+                {t("demand.description")}
               </h3>
               <div className="prose prose-sm max-w-none rounded-lg border p-4">
                 <p className="whitespace-pre-wrap">{demand.description}</p>
@@ -278,14 +338,14 @@ export function DemandDetail({ demand, isAgentActive }: DemandDetailProps) {
 
           {!demand.description && (
             <p className="py-4 text-sm text-muted-foreground">
-              No description provided.
+              {t("demand.noDescription")}
             </p>
           )}
 
           {hasLegacyMerge && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Merge (Legacy)
+                {t("demand.mergeLegacy")}
               </h3>
               <MergeStatusView
                 demandId={demand.id}

@@ -15,6 +15,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
             hasGithubToken: !!settings.githubToken,
             hasAnthropicApiKey: !!settings.anthropicApiKey,
             agentExecutionMode: settings.agentExecutionMode ?? "sdk",
+            beeLanguage: settings.beeLanguage ?? "pt-BR",
           }
         : {
             githubToken: null,
@@ -22,6 +23,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
             hasGithubToken: false,
             hasAnthropicApiKey: false,
             agentExecutionMode: "sdk",
+            beeLanguage: "pt-BR",
           },
     }
   })
@@ -32,9 +34,10 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
       githubToken?: string | null
       anthropicApiKey?: string | null
       agentExecutionMode?: "sdk" | "cli"
+      beeLanguage?: "pt-BR" | "en-US"
     }
 
-    if (!body || (body.githubToken === undefined && body.anthropicApiKey === undefined && body.agentExecutionMode === undefined)) {
+    if (!body || (body.githubToken === undefined && body.anthropicApiKey === undefined && body.agentExecutionMode === undefined && body.beeLanguage === undefined)) {
       return reply.status(400).send({ error: "At least one setting is required" })
     }
 
@@ -42,6 +45,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
     if (body.githubToken !== undefined) data.githubToken = body.githubToken
     if (body.anthropicApiKey !== undefined) data.anthropicApiKey = body.anthropicApiKey
     if (body.agentExecutionMode !== undefined) data.agentExecutionMode = body.agentExecutionMode
+    if (body.beeLanguage !== undefined) data.beeLanguage = body.beeLanguage
 
     const settings = await (request.prisma as any).tenantSettings.upsert({
       where: {
@@ -58,6 +62,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         hasGithubToken: !!settings.githubToken,
         hasAnthropicApiKey: !!settings.anthropicApiKey,
         agentExecutionMode: settings.agentExecutionMode ?? "sdk",
+        beeLanguage: settings.beeLanguage ?? "pt-BR",
       },
     }
   })

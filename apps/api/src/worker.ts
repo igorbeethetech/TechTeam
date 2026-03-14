@@ -5,9 +5,15 @@
 import "./lib/config.js"
 import { createAgentWorker } from "./queues/agent.worker.js"
 import { createMergeWorker } from "./queues/merge.worker.js"
+import { startCancelListener } from "./lib/process-registry.js"
+import { createSubscriberConnection } from "./lib/redis.js"
 
 const agentWorker = createAgentWorker()
 const mergeWorker = createMergeWorker()
+
+// Start Redis cancel listener for cross-process agent cancellation
+const cancelSubscriber = createSubscriberConnection()
+startCancelListener(cancelSubscriber)
 
 console.log("[agent-worker] Agent worker started")
 console.log("[merge-worker] Merge worker started")
@@ -15,7 +21,11 @@ console.log("[merge-worker] Merge worker started")
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
   console.log(`[worker] Received ${signal}, closing workers...`)
-  await Promise.all([agentWorker.close(), mergeWorker.close()])
+  await Promise.all([
+    agentWorker.close(),
+    mergeWorker.close(),
+    cancelSubscriber.quit(),
+  ])
   process.exit(0)
 }
 
